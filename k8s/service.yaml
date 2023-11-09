@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: digpos
+spec:
+  selector:
+    app: digpos
+  ports:
+    - protocol: TCP
+      port: 3000
+  type: LoadBalancer
