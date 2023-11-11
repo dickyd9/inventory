@@ -1,7 +1,8 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: digpos
+  name: digpos-svc
+  namespace: digpos
 spec:
   selector:
     app: digpos
