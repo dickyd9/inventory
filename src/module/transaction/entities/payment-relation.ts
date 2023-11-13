@@ -9,14 +9,14 @@ const paymentStatus = [
   'CANCELED',
 ];
 
-const paymentMethod = [
-  'CASH',
-  'DEBIT',
-];
+const paymentMethod = ['CASH', 'DEBIT'];
 
 @Schema({ timestamps: true })
 export class PaymentRelation extends Document {
   @Prop({ type: String, unique: true, index: true, default: null })
+  invoiceCode: string;
+
+  @Prop({ index: true, default: null })
   paymentCode: string;
 
   @Prop({ type: String, enum: paymentMethod, default: null })
@@ -44,6 +44,12 @@ export const PaymentRelationSchema =
 PaymentRelationSchema.pre('save', function (next) {
   const currentDate = new Date();
 
+  const randomPart = Math.random().toString().slice(2, 6);
+  const dateString = currentDate.toISOString().slice(0, 10).replace(/-/g, '');
+
+  const basic = `INV-${dateString}SL${randomPart}`;
+
+  this.invoiceCode = basic;
   (this.expiredDate = new Date(currentDate.getTime() + 24 * 60 * 60 * 1000)),
     next();
 });

@@ -33,15 +33,8 @@ export class Transaction extends Document {
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);
 
 TransactionSchema.pre('save', function (next) {
-  const currentDate = new Date();
-  const randomPart = Math.random().toString().slice(2, 6);
-  const dateString = currentDate.toISOString().slice(0, 10).replace(/-/g, '');
+  const randomPart = Math.random().toString().slice(2, 10);
 
-  // const buf = Buffer.from(randomPart, 'utf8');
-
-  const basic = `INV-${randomPart}-${dateString}`;
-
-  // this.paymentCode = buf.toString('base64');
-  this.paymentCode = basic;
+  this.paymentCode = randomPart;
   next();
 });

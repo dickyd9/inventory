@@ -16,7 +16,7 @@ export class TransactionController {
   constructor(private readonly transactionService: TransactionService) {}
 
   @Post()
-  createInvoice(
+  createOrder(
     @Body()
     userCode: {
       customerCode: string;
@@ -25,11 +25,11 @@ export class TransactionController {
   ) {
     const user = req.user;
 
-    return this.transactionService.createTicket(user.sub, userCode);
+    return this.transactionService.createOrder(user.sub, userCode);
   }
 
   @Put(':paymentCode')
-  createTransaction(
+  addItem(
     @Param('paymentCode')
     paymentCode: string,
     @Body()
@@ -41,7 +41,30 @@ export class TransactionController {
       }[];
     },
   ) {
-    return this.transactionService.createTransaction(paymentCode, items);
+    return this.transactionService.addItem(paymentCode, items);
+  }
+
+  @Patch('updatePaymentMethod')
+  updatePaymentMethod(
+    @Body()
+    payment: {
+      paymentCode: string;
+      paymentMethod: string;
+    },
+  ) {
+    return this.transactionService.updatePaymentMethod(payment);
+  }
+
+  @Patch('updatePaymentStatus')
+  updatePaymentStatus(
+    @Body()
+    payment: {
+      paymentCode: string;
+      paymentStatus: string;
+      paymentPrice: number;
+    },
+  ) {
+    return this.transactionService.updatePaymentStatus(payment);
   }
 
   @Get('payment/:paymentCode')
@@ -64,28 +87,5 @@ export class TransactionController {
     year: any,
   ) {
     return this.transactionService.findAll(day, month, year);
-  }
-
-  @Patch('updatePayment')
-  updatePaymentStatus(
-    @Body()
-    payment: {
-      paymentCode: string;
-      paymentStatus: string;
-    },
-  ) {
-    return this.transactionService.updatePaymentStatus(payment);
-  }
-
-  @Patch('updatePaymentMethod')
-  updatePaymentMethod(
-    @Body()
-    payment: {
-      paymentCode: string;
-      paymentMethod: string;
-      paymentAmount: number
-    },
-  ) {
-    return this.transactionService.updatePaymentMethod(payment);
   }
 }
