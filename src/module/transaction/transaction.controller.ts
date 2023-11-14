@@ -44,27 +44,32 @@ export class TransactionController {
     return this.transactionService.addItem(paymentCode, items);
   }
 
-  @Patch('updatePaymentMethod')
-  updatePaymentMethod(
-    @Body()
-    payment: {
-      paymentCode: string;
-      paymentMethod: string;
-    },
-  ) {
-    return this.transactionService.updatePaymentMethod(payment);
-  }
+  // @Patch('updatePaymentMethod')
+  // updatePaymentMethod(
+  //   @Body()
+  //   payment: {
+  //     paymentCode: string;
+  //     paymentMethod: string;
+  //   },
+  // ) {
+  //   return this.transactionService.updatePaymentMethod(payment);
+  // }
 
-  @Patch('updatePaymentStatus')
+  @Put('updatePaymentStatus')
   updatePaymentStatus(
     @Body()
     payment: {
       paymentCode: string;
-      paymentStatus: string;
+      paymentMethod: string;
       paymentPrice: number;
     },
   ) {
     return this.transactionService.updatePaymentStatus(payment);
+  }
+
+  @Get('payment')
+  getLastTransaction() {
+    return this.transactionService.getLastTransaction();
   }
 
   @Get('payment/:paymentCode')

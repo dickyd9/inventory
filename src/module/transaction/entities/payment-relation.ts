@@ -19,7 +19,7 @@ export class PaymentRelation extends Document {
   @Prop({ index: true, default: null })
   paymentCode: string;
 
-  @Prop({ type: String, enum: paymentMethod, default: null })
+  @Prop({ type: String, enum: paymentMethod, default: "CASH" })
   paymentMethod: string;
 
   @Prop({ type: Number, default: 0 })

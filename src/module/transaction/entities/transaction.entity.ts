@@ -28,6 +28,9 @@ export class Transaction extends Document {
 
   @Prop({ type: Number, default: null })
   totalPrice: number;
+
+  @Prop({ type: Date, default: new Date() })
+  createdAt: Date;
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);

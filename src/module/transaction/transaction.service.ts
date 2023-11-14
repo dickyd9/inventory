@@ -7,6 +7,7 @@ import { PaymentRelation } from './entities/payment-relation';
 import { CustomerPoint } from '../customer/entities/customer.point.entity';
 import { EmployeeTaskReport } from '../employee/entities/employee.task.report';
 import { Employee } from '../employee/entities/employee.entity';
+import { Customer } from '../customer/entities/customer.entity';
 
 @Injectable()
 export class TransactionService {
@@ -16,6 +17,7 @@ export class TransactionService {
     @InjectModel('Employee') private modelEmployee: Model<Employee>,
     @InjectModel('EmployeeTaskReport')
     private modelEmployeeTaskReport: Model<EmployeeTaskReport>,
+    @InjectModel('Customer') private modelCustomer: Model<Customer>,
     @InjectModel('CustomerPoint')
     private modelCustomerPoint: Model<CustomerPoint>,
     @InjectModel('PaymentRelation')
@@ -72,24 +74,26 @@ export class TransactionService {
 
     const itemsData = [];
 
-    for (const item of items.data) {
-      const { itemCode, amount, employeeCode } = item;
-      const { itemPoint, itemPrice } = await this.modelItem.findOne({
-        itemCode: itemCode,
-      });
+    if (Array.isArray(items.item)) {
+      for (const item of items.data) {
+        const { itemCode, amount, employeeCode } = item;
+        const { itemPoint, itemPrice } = await this.modelItem.findOne({
+          itemCode: itemCode,
+        });
 
-      itemsData.push({
-        itemCode,
-        amount,
-        itemPoint,
-        employeeCode,
-      });
+        itemsData.push({
+          itemCode,
+          amount,
+          itemPoint,
+          employeeCode,
+        });
 
-      math.totalPoint += itemPoint;
+        math.totalPoint += itemPoint;
 
-      math.totalPrice += itemPrice * amount;
+        math.totalPrice += itemPrice * amount;
 
-      math.totalAmount += amount;
+        math.totalAmount += amount;
+      }
     }
 
     const transaction = {
@@ -101,48 +105,56 @@ export class TransactionService {
       paymentCode: paymentCode,
     });
 
-    await trx.updateOne(transaction);
+    if (trx) {
+      await trx.updateOne(transaction);
 
-    return {
-      status: HttpStatus.CREATED,
-      message: 'Item Updated',
-      paymentCode: paymentCode,
-      itemAmount: items.length,
-    };
-  }
-
-  async updatePaymentMethod(payments: any) {
-    const { paymentCode, paymentMethod } = payments;
-    try {
-      const trx = await this.modelTransaction.findOne({
+      const body = {
         paymentCode: paymentCode,
-      });
-      if (paymentMethod === 'CASH') {
-        const body = {
-          paymentCode: paymentCode,
-          paymentMethod: paymentMethod,
-          paymentStatus: 'SELECTING_PAYMENT',
-        };
-        const payment = new this.modelPayment(body);
-        const result = await payment.save();
-        return result;
-      } else {
-        const body = {
-          paymentCode: paymentCode,
-          paymentMethod: paymentMethod,
-          paymentStatus: 'SELECTING_PAYMENT',
-        };
-        const payment = new this.modelPayment(body);
-        const result = await payment.save();
-        return result;
-      }
-    } catch (error) {}
+      };
+      const payment = new this.modelPayment(body);
+
+      await payment.save();
+
+      return {
+        status: HttpStatus.CREATED,
+        message: 'Item Updated',
+        paymentCode: paymentCode,
+        itemAmount: items.length,
+      };
+    }
   }
+
+  // async updatePaymentMethod(payments: any) {
+  //   const { paymentCode, paymentMethod } = payments;
+  //   try {
+  //     const trx = await this.modelTransaction.findOne({
+  //       paymentCode: paymentCode,
+  //     });
+  //     if (paymentMethod === 'CASH') {
+  //       const body = {
+  //         paymentCode: paymentCode,
+  //         paymentMethod: paymentMethod,
+  //         paymentStatus: 'SELECTING_PAYMENT',
+  //       };
+  //       const payment = new this.modelPayment(body);
+  //       const result = await payment.save();
+  //       return result;
+  //     } else {
+  //       const body = {
+  //         paymentCode: paymentCode,
+  //         paymentMethod: paymentMethod,
+  //         paymentStatus: 'SELECTING_PAYMENT',
+  //       };
+  //       const payment = new this.modelPayment(body);
+  //       const result = await payment.save();
+  //       return result;
+  //     }
+  //   } catch (error) {}
+  // }
 
   async updatePaymentStatus(payment: any) {
+    const { paymentCode, paymentMethod, paymentPrice } = payment;
     try {
-      const { paymentCode, paymentStatus, paymentPrice } = payment;
-
       const transaction = await this.modelTransaction.findOne({
         paymentCode,
       });
@@ -155,42 +167,27 @@ export class TransactionService {
         changeAmount = paymentPrice - transaction.totalPrice;
       }
 
-      const payments = await this.modelPayment
-        .findOneAndUpdate(
-          { paymentCode },
-          {
-            paymentStatus: paymentStatus,
-            totalPrice: transaction.totalPrice,
-            paymentAmount: paymentAmount,
-            changeAmount: changeAmount,
-          },
-          { new: true },
-        )
-        .exec();
+      const payments = {
+        paymentStatus: 'PAID',
+        paymentMethod: paymentMethod,
+        totalPrice: transaction.totalPrice,
+        paymentAmount: paymentAmount,
+        changeAmount: changeAmount,
+      };
 
-      if (paymentStatus === 'PAID') {
-        const point = {
-          customerCode: transaction.customerCode,
-          transactionRef: transaction.paymentCode,
-          pointAmount: transaction.totalPoint,
-        };
-
-        const customerPoint = new this.modelCustomerPoint(point);
-        await customerPoint.save();
-
-        for (const item of transaction.item) {
-          const employeeTask = {
-            employeeCode: item.employeeCode,
-            transactionRef: transaction._id,
-            serviceCode: item.itemCode,
-          };
-
-          const employee = new this.modelEmployeeTaskReport(employeeTask);
-          await employee.save();
-        }
+      if (paymentPrice < transaction.totalPrice) {
+        throw new HttpException(
+          'Harga tidak boleh melebihi total transaksi',
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
-      return payments;
+      const payment = await this.modelPayment.findOne({
+        paymentCode: paymentCode,
+      });
+      const result = await payment.updateOne(payments);
+
+      return result;
     } catch (error) {}
   }
 
@@ -273,6 +270,61 @@ export class TransactionService {
       ...transaction.toObject(),
       ...payment.toObject(),
     };
+  }
+
+  async getLastTransaction() {
+    const trx = await this.modelTransaction.find();
+
+    const result = [];
+    await Promise.all(
+      trx.map(async (e: any) => {
+        const payment = await this.modelPayment.findOne({
+          paymentCode: e.paymentCode,
+        });
+        const customer = await this.modelCustomer.findOne({
+          customerCode: e.customerCode,
+        });
+
+        const items = [];
+        if (Array.isArray(e.item)) {
+          for (const item of e.item) {
+            const itm = await this.modelItem.findOne({
+              itemCode: item.itemCode,
+            });
+
+            const itemResult = {
+              itemName: itm.itemName,
+              itemPrice: itm.itemPrice,
+              itemAmount: item.amount,
+              itemPoint: itm.itemPoint,
+              totalPoint: itm.itemPoint * item.amount,
+              totalAmount: item.amount,
+              totalPrice: item.amount * itm.itemPrice,
+            };
+
+            items.push(itemResult);
+          }
+        }
+
+        if (payment) {
+          const detail = {
+            invoice: payment?.invoiceCode,
+            paymentCode: payment?.paymentCode,
+            customerName: customer.customerName,
+            totalPrice: e.totalPrice,
+            totalAmount: e.totalAmount,
+            paymentMethod: payment.paymentMethod,
+            paymentStatus: payment.paymentStatus,
+            paymentDate: e?.createdAt,
+            items,
+          };
+
+          result.push(detail);
+        }
+      }),
+    );
+
+    return result;
   }
 
   async findAll(day: any, month: any, year: any) {
