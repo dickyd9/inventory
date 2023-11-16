@@ -55,16 +55,18 @@ export class TransactionController {
   //   return this.transactionService.updatePaymentMethod(payment);
   // }
 
-  @Put('updatePaymentStatus')
+  @Patch('updatePaymentStatus/:paymentCode')
   updatePaymentStatus(
+    @Param('paymentCode')
+    paymentCode: string,
+
     @Body()
     payment: {
-      paymentCode: string;
       paymentMethod: string;
       paymentPrice: number;
     },
   ) {
-    return this.transactionService.updatePaymentStatus(payment);
+    return this.transactionService.updatePaymentStatus(paymentCode, payment);
   }
 
   @Get('payment')

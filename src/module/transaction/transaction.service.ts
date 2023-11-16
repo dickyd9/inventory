@@ -55,6 +55,10 @@ export class TransactionService {
       userId,
     };
 
+    const customer = await this.modelCustomer.findOne({
+      customerCode: customerCode,
+    });
+
     const trx = new this.modelTransaction(ticketTransaction);
     const result = await trx.save();
 
@@ -62,6 +66,8 @@ export class TransactionService {
       status: HttpStatus.CREATED,
       message: 'Transaction Added',
       paymentCode: result.paymentCode,
+      customerName: customer.customerName,
+      trasactionDate: result.createdAt,
     };
   }
 
@@ -74,26 +80,24 @@ export class TransactionService {
 
     const itemsData = [];
 
-    if (Array.isArray(items.item)) {
-      for (const item of items.data) {
-        const { itemCode, amount, employeeCode } = item;
-        const { itemPoint, itemPrice } = await this.modelItem.findOne({
-          itemCode: itemCode,
-        });
+    for (const item of items?.data) {
+      const { itemCode, amount, employeeCode } = item;
+      const { itemPoint, itemPrice } = await this.modelItem.findOne({
+        itemCode: itemCode,
+      });
 
-        itemsData.push({
-          itemCode,
-          amount,
-          itemPoint,
-          employeeCode,
-        });
+      itemsData.push({
+        itemCode,
+        amount,
+        itemPoint,
+        employeeCode,
+      });
 
-        math.totalPoint += itemPoint;
+      math.totalPoint += itemPoint;
 
-        math.totalPrice += itemPrice * amount;
+      math.totalPrice += itemPrice * amount;
 
-        math.totalAmount += amount;
-      }
+      math.totalAmount += amount;
     }
 
     const transaction = {
@@ -152,13 +156,12 @@ export class TransactionService {
   //   } catch (error) {}
   // }
 
-  async updatePaymentStatus(payment: any) {
-    const { paymentCode, paymentMethod, paymentPrice } = payment;
+  async updatePaymentStatus(paymentCode: string, payment: any) {
+    const { paymentMethod, paymentPrice } = payment;
+    const transaction = await this.modelTransaction.findOne({
+      paymentCode,
+    });
     try {
-      const transaction = await this.modelTransaction.findOne({
-        paymentCode,
-      });
-
       let paymentAmount = transaction.totalPrice;
       let changeAmount = 0;
 
@@ -167,27 +170,32 @@ export class TransactionService {
         changeAmount = paymentPrice - transaction.totalPrice;
       }
 
-      const payments = {
-        paymentStatus: 'PAID',
-        paymentMethod: paymentMethod,
-        totalPrice: transaction.totalPrice,
-        paymentAmount: paymentAmount,
-        changeAmount: changeAmount,
-      };
-
-      if (paymentPrice < transaction.totalPrice) {
+      if (paymentPrice > transaction.totalPrice) {
         throw new HttpException(
-          'Harga tidak boleh melebihi total transaksi',
+          'Harga tidak boleh kurang total transaksi',
           HttpStatus.BAD_REQUEST,
         );
       }
 
-      const payment = await this.modelPayment.findOne({
-        paymentCode: paymentCode,
-      });
-      const result = await payment.updateOne(payments);
+      const paymentResult = await this.modelPayment.updateOne(
+        {
+          paymentCode: paymentCode,
+        },
+        {
+          $set: {
+            paymentStatus: 'PAID',
+            paymentMethod: paymentMethod,
+            totalPrice: transaction.totalPrice,
+            paymentAmount: paymentAmount,
+            changeAmount: changeAmount,
+          },
+        },
+        {
+          new: true,
+        },
+      );
 
-      return result;
+      return paymentResult;
     } catch (error) {}
   }
 
@@ -273,7 +281,10 @@ export class TransactionService {
   }
 
   async getLastTransaction() {
-    const trx = await this.modelTransaction.find();
+    const trx = await this.modelTransaction
+      .find()
+      .limit(3)
+      .sort({ createdAt: -1 });
 
     const result = [];
     await Promise.all(
@@ -312,9 +323,12 @@ export class TransactionService {
             paymentCode: payment?.paymentCode,
             customerName: customer.customerName,
             totalPrice: e.totalPrice,
+            totalPoint: e.totalPoint,
             totalAmount: e.totalAmount,
             paymentMethod: payment.paymentMethod,
+            paymentAmount: payment.paymentAmount,
             paymentStatus: payment.paymentStatus,
+            changeAmount: payment.changeAmount,
             paymentDate: e?.createdAt,
             items,
           };
