@@ -281,10 +281,7 @@ export class TransactionService {
   }
 
   async getLastTransaction() {
-    const trx = await this.modelTransaction
-      .find()
-      .limit(3)
-      .sort({ createdAt: -1 });
+    const trx = await this.modelTransaction.find();
 
     const result = [];
     await Promise.all(
