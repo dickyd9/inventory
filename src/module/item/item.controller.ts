@@ -13,7 +13,7 @@ import {
 import { ItemService } from './item.service';
 import { CreateItemDto } from './dto/create-item.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
-import { ResponseInterceptor } from 'src/common/response/response.interceptor'
+import { ResponseInterceptor } from 'src/common/response/response.interceptor';
 
 @Controller('item')
 export class ItemController {
@@ -35,6 +35,11 @@ export class ItemController {
   @UseInterceptors(ResponseInterceptor)
   getItem(@Query('keyword') keyword: any) {
     return this.itemService.getAllItem(keyword);
+  }
+
+  @Get('/menu')
+  getMenu() {
+    return this.itemService.getMenu();
   }
 
   @Get(':id')

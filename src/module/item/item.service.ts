@@ -57,6 +57,11 @@ export class ItemService {
     return item;
   }
 
+  async getMenu(): Promise<Item[]> {
+    const item = await this.itemModel.find();
+    return item;
+  }
+
   async findOne(itemId: string) {
     const item = await this.itemModel
       .findById(itemId)

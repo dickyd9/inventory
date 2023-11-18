@@ -162,19 +162,12 @@ export class TransactionService {
       paymentCode,
     });
     try {
-      let paymentAmount = transaction.totalPrice;
-      let changeAmount = 0;
+      let paymentAmount = paymentPrice;
+      let changeAmount = paymentPrice - transaction.totalPrice;
 
       if (paymentPrice != 0) {
         paymentAmount = paymentPrice;
         changeAmount = paymentPrice - transaction.totalPrice;
-      }
-
-      if (paymentPrice > transaction.totalPrice) {
-        throw new HttpException(
-          'Harga tidak boleh kurang total transaksi',
-          HttpStatus.BAD_REQUEST,
-        );
       }
 
       const paymentResult = await this.modelPayment.updateOne(
@@ -195,7 +188,9 @@ export class TransactionService {
         },
       );
 
-      return paymentResult;
+      return {
+        message: 'Payment Success'
+      };
     } catch (error) {}
   }
 
