@@ -8,12 +8,50 @@ import {
   Req,
   Query,
   Put,
+  UseInterceptors,
+  UploadedFile,
+  Res,
+  StreamableFile,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { TransactionService } from './transaction.service';
+import { FileInterceptor } from '@nestjs/platform-express';
+import fs, { createReadStream } from 'fs';
+import { Public } from 'src/config/database/meta';
+import path, { join } from 'path';
 
 @Controller('transaction')
 export class TransactionController {
   constructor(private readonly transactionService: TransactionService) {}
+
+  @Post('saveInv')
+  @UseInterceptors(FileInterceptor('file'))
+  saveInvoice(@UploadedFile() file) {
+    try {
+      return { message: 'File berhasil disimpan', filename: file.originalname };
+    } catch (error) {
+      return { message: 'Gagal menyimpan file', error: error.message };
+    }
+  }
+
+  @Get('invoice/:invoiceName')
+  @Public()
+  async getFile(
+    @Res({ passthrough: true }) res,
+    @Param('invoiceName') invoiceName: string,
+  ): Promise<StreamableFile> {
+    try {
+      const file = createReadStream(
+        join(process.cwd(), `uploads/${invoiceName}`),
+      );
+      res.set({
+        'Content-Type': 'application/pdf',
+      });
+      return new StreamableFile(file);
+    } catch (error) {
+      res.status(500).send(error);
+    }
+  }
 
   @Post()
   createOrder(

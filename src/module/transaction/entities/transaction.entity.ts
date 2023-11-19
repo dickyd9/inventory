@@ -32,13 +32,16 @@ export class Transaction extends Document {
   @Prop({ type: Boolean, default: false })
   isDone: number;
 
-  @Prop({ type: Date, default: new Date() })
+  @Prop({
+    type: Date,
+    default: Date.now,
+  })
   createdAt: Date;
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);
 
-TransactionSchema.pre('save', function (next) {
+TransactionSchema.pre('save', async function (next) {
   const randomPart = Math.random().toString().slice(2, 10);
 
   this.paymentCode = randomPart;

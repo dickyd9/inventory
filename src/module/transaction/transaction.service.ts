@@ -170,7 +170,7 @@ export class TransactionService {
         changeAmount = paymentPrice - transaction.totalPrice;
       }
 
-      const paymentResult = await this.modelPayment.updateOne(
+      await this.modelPayment.updateOne(
         {
           paymentCode: paymentCode,
         },
@@ -188,8 +188,53 @@ export class TransactionService {
         },
       );
 
+      const payments = await this.modelPayment.findOne({
+        paymentCode: paymentCode,
+      });
+
+      const customer = await this.modelCustomer.findOne({
+        customerCode: transaction.customerCode,
+      });
+
+      const items = [];
+      if (Array.isArray(transaction.item)) {
+        for (const item of transaction.item) {
+          const itm = await this.modelItem.findOne({
+            itemCode: item.itemCode,
+          });
+
+          const itemResult = {
+            itemName: itm.itemName,
+            itemPrice: itm.itemPrice,
+            itemAmount: item.amount,
+            itemPoint: itm.itemPoint,
+            totalPoint: itm.itemPoint * item.amount,
+            totalAmount: item.amount,
+            totalPrice: item.amount * itm.itemPrice,
+          };
+
+          items.push(itemResult);
+        }
+      }
+
+      const data = {
+        invoice: payments?.invoiceCode,
+        paymentCode: paymentCode,
+        customerName: customer.customerName,
+        totalPrice: transaction?.totalPrice,
+        totalPoint: transaction?.totalPoint,
+        totalAmount: transaction?.totalAmount,
+        paymentMethod: payments.paymentMethod,
+        paymentAmount: payments.paymentAmount,
+        paymentStatus: payments.paymentStatus,
+        changeAmount: payments.changeAmount,
+        paymentDate: transaction?.createdAt,
+        items,
+      };
+
       return {
-        message: 'Payment Success'
+        message: 'Payment Success',
+        data,
       };
     } catch (error) {}
   }
@@ -276,7 +321,7 @@ export class TransactionService {
   }
 
   async getLastTransaction() {
-    const trx = await this.modelTransaction.find();
+    const trx = await this.modelTransaction.find().sort({ createdAt: -1 });
 
     const result = [];
     await Promise.all(
