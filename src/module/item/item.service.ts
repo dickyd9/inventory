@@ -1,9 +1,4 @@
-import {
-  HttpException,
-  HttpStatus,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CreateItemDto } from './dto/create-item.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
 import { InjectModel } from '@nestjs/mongoose';
@@ -57,9 +52,14 @@ export class ItemService {
     return item;
   }
 
-  async getMenu(): Promise<Item[]> {
-    const item = await this.itemModel.find();
-    return item;
+  async getMenu(type: string): Promise<Item[]> {
+    if (type) {
+      const item = await this.itemModel.find({ itemType: type });
+      return item;
+    } else {
+      const item = await this.itemModel.find();
+      return item;
+    }
   }
 
   async findOne(itemId: string) {
@@ -76,28 +76,6 @@ export class ItemService {
       .exec();
 
     return itemempty;
-  }
-
-  async getDetailItem(itemId: string) {
-    // try {
-    //   const item = await this.itemModel.findOne({ _id: itemId });
-    //   if (item.itemType === 'product') {
-    //     const itemReport = await this.reportModel
-    //       .find({
-    //         itemCode: item.itemCode,
-    //       })
-    //       .select('type amount source')
-    //       .exec();
-    //     const product = {
-    //       ...item.toObject(),
-    //       itemMeta: itemReport,
-    //     };
-    //     return product;
-    //   } else {
-    //     const service = {};
-    //     return service;
-    //   }
-    // } catch (error) {}
   }
 
   update(id: number, updateItemDto: UpdateItemDto) {

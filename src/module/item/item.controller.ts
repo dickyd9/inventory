@@ -38,14 +38,14 @@ export class ItemController {
   }
 
   @Get('/menu')
-  getMenu() {
-    return this.itemService.getMenu();
+  getMenu(@Query('type') type: string) {
+    return this.itemService.getMenu(type);
   }
 
-  @Get(':id')
-  itemDetail(@Param('id') itemId: string) {
-    return this.itemService.getDetailItem(itemId);
-  }
+  // @Get(':id')
+  // itemDetail(@Param('id') itemId: string) {
+  //   return this.itemService.getDetailItem(itemId);
+  // }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateItemDto: UpdateItemDto) {

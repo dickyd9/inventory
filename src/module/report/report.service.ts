@@ -4,6 +4,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Item } from '../item/entities/item.entity';
 import { Transaction } from '../transaction/entities/transaction.entity';
 import { Employee } from '../employee/entities/employee.entity';
+import { CreateExpenses } from './dto/create-expenses.dto';
+import { Expenses } from './entities/expense.entity';
 
 @Injectable()
 export class ReportService {
@@ -11,6 +13,7 @@ export class ReportService {
     @InjectModel('Item') private modelItem: Model<Item>,
     @InjectModel('Transaction') private modelTransaction: Model<Transaction>,
     @InjectModel('Employee') private modelEmployee: Model<Employee>,
+    @InjectModel('Expenses') private modelExpenses: Model<Expenses>,
   ) {}
 
   async reportTransaction(report: string, month: any, year: any) {
@@ -115,5 +118,74 @@ export class ReportService {
     // }
 
     return reports;
+  }
+
+  async addExpenses(createExpenses: CreateExpenses) {
+    const expenses = new this.modelExpenses(createExpenses);
+    const result = await expenses.save();
+    return { message: 'Success Add Data!', data: result };
+  }
+
+  async getExpenses(month: any, year: any) {
+    const query: any = {};
+
+    if (month && year) {
+      const awalBulan = new Date(year, month - 1, 1);
+      const akhirBulan = new Date(year, month, 0, 23, 59, 59, 999);
+      query.createdAt = { $gte: awalBulan, $lte: akhirBulan };
+    }
+
+    const expenses = await this.modelExpenses.find(query);
+
+    return expenses;
+  }
+
+  async getLaporanPendapatan(
+    startDate: any,
+    endDate: any,
+    month: any,
+    year: any,
+  ) {
+    try {
+      if ((startDate && endDate) || (month && year)) {
+        const query: any = {};
+        if (startDate && endDate) {
+          query.createdAt = { $gte: startDate, $lte: endDate };
+        } else if (month && year) {
+          const firstMonth = new Date(year, month - 1, 1);
+          const lastMonth = new Date(year, month, 0, 23, 59, 59, 999);
+          query.createdAt = { $gte: firstMonth, $lte: lastMonth };
+        }
+
+        const [transactions, expenses] = await Promise.all([
+          this.modelTransaction.find(query),
+          this.modelExpenses.find(query),
+        ]);
+
+        const totalIncome = transactions.reduce(
+          (total, transaksi) => total + transaksi.totalPrice,
+          0,
+        );
+        const totalExpense = expenses.reduce(
+          (total, pengeluaran) => total + pengeluaran.price,
+          0,
+        );
+
+        const summary = totalIncome - totalExpense;
+        const laporan = {
+          month,
+          year,
+          totalIncome,
+          totalExpense,
+          summary,
+        };
+
+        return laporan;
+      } else {
+        throw new Error('Bulan dan tahun diperlukan.');
+      }
+    } catch (error) {
+      throw new Error('Terjadi kesalahan dalam mengambil laporan pendapatan.');
+    }
   }
 }

@@ -14,7 +14,8 @@ import { CustomerSchema } from '../customer/entities/customer.entity';
 import { CustomerPointSchema } from '../customer/entities/customer.point.entity';
 import { EmployeeTaskReportSchema } from '../employee/entities/employee.task.report';
 import { EmployeeTaskSchema } from '../employee/entities/employee.task';
-import { userLogSchema } from '../user/entities/user-log-entity'
+import { userLogSchema } from '../user/entities/user-log-entity';
+import { ExpensesSchema } from '../report/entities/expense.entity';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { userLogSchema } from '../user/entities/user-log-entity'
       { name: 'EmployeeTaskReport', schema: EmployeeTaskReportSchema },
       { name: 'Customer', schema: CustomerSchema },
       { name: 'CustomerPoint', schema: CustomerPointSchema },
+      { name: 'Expenses', schema: ExpensesSchema },
     ]),
   ],
   exports: [
@@ -55,6 +57,7 @@ import { userLogSchema } from '../user/entities/user-log-entity'
       { name: 'EmployeeTaskReport', schema: EmployeeTaskReportSchema },
       { name: 'Customer', schema: CustomerSchema },
       { name: 'CustomerPoint', schema: CustomerPointSchema },
+      { name: 'Expenses', schema: ExpensesSchema },
     ]),
   ],
 })
