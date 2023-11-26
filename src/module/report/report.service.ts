@@ -6,12 +6,15 @@ import { Transaction } from '../transaction/entities/transaction.entity';
 import { Employee } from '../employee/entities/employee.entity';
 import { CreateExpenses } from './dto/create-expenses.dto';
 import { Expenses } from './entities/expense.entity';
+import { PaymentRelation } from '../transaction/entities/payment-relation';
 
 @Injectable()
 export class ReportService {
   constructor(
     @InjectModel('Item') private modelItem: Model<Item>,
     @InjectModel('Transaction') private modelTransaction: Model<Transaction>,
+    @InjectModel('PaymentRelation')
+    private modelPayment: Model<PaymentRelation>,
     @InjectModel('Employee') private modelEmployee: Model<Employee>,
     @InjectModel('Expenses') private modelExpenses: Model<Expenses>,
   ) {}
@@ -140,12 +143,7 @@ export class ReportService {
     return expenses;
   }
 
-  async getLaporanPendapatan(
-    startDate: any,
-    endDate: any,
-    month: any,
-    year: any,
-  ) {
+  async getReport(startDate: any, endDate: any, month: any, year: any) {
     try {
       if ((startDate && endDate) || (month && year)) {
         const query: any = {};
@@ -157,9 +155,10 @@ export class ReportService {
           query.createdAt = { $gte: firstMonth, $lte: lastMonth };
         }
 
-        const [transactions, expenses] = await Promise.all([
+        const [transactions, expenses, payment] = await Promise.all([
           this.modelTransaction.find(query),
           this.modelExpenses.find(query),
+          this.modelPayment.find(query),
         ]);
 
         const totalIncome = transactions.reduce(
@@ -172,7 +171,18 @@ export class ReportService {
         );
 
         const summary = totalIncome - totalExpense;
-        const laporan = {
+
+        const paymentUsage = {};
+
+        payment.forEach((payment) => {
+          if (!paymentUsage[payment.paymentMethod]) {
+            paymentUsage[payment.paymentMethod] = 1;
+          } else {
+            paymentUsage[payment.paymentMethod]++;
+          }
+        });
+
+        const financialReport = {
           month,
           year,
           totalIncome,
@@ -180,7 +190,13 @@ export class ReportService {
           summary,
         };
 
-        return laporan;
+        return {
+          message: '',
+          data: {
+            financialReport,
+            paymentUsage,
+          },
+        };
       } else {
         throw new Error('Bulan dan tahun diperlukan.');
       }

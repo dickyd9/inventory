@@ -26,6 +26,7 @@ import { EmployeeModule } from './module/employee/employee.module';
 import { CustomerModule } from './module/customer/customer.module';
 import { ReportModule } from './module/report/report.module';
 import { DashboardModule } from './module/dashboard/dashboard.module';
+import { StorageModule } from './common/storage/storage.module';
 
 @Module({
   imports: [
@@ -73,6 +74,7 @@ import { DashboardModule } from './module/dashboard/dashboard.module';
     CustomerModule,
     ReportModule,
     DashboardModule,
+    StorageModule,
   ],
   controllers: [AppController],
   providers: [

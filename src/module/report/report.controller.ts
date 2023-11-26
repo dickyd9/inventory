@@ -58,7 +58,7 @@ export class ReportController {
     return this.reportService.getExpenses(month, year);
   }
 
-  @Get('income')
+  @Get('info')
   getTotalIncome(
     @Query('startDate')
     startDate: any,
@@ -69,11 +69,6 @@ export class ReportController {
     @Query('year')
     year: any,
   ) {
-    return this.reportService.getLaporanPendapatan(
-      startDate,
-      endDate,
-      month,
-      year,
-    );
+    return this.reportService.getReport(startDate, endDate, month, year);
   }
 }

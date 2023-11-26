@@ -1,4 +1,10 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Item } from '../item/entities/item.entity';
@@ -8,6 +14,8 @@ import { CustomerPoint } from '../customer/entities/customer.point.entity';
 import { EmployeeTaskReport } from '../employee/entities/employee.task.report';
 import { Employee } from '../employee/entities/employee.entity';
 import { Customer } from '../customer/entities/customer.entity';
+import { StorageService } from 'src/common/storage/storage.service';
+import { StorageFile } from 'src/common/storage/storage.file';
 
 @Injectable()
 export class TransactionService {
@@ -22,6 +30,7 @@ export class TransactionService {
     private modelCustomerPoint: Model<CustomerPoint>,
     @InjectModel('PaymentRelation')
     private modelPayment: Model<PaymentRelation>,
+    private readonly storageService: StorageService,
   ) {}
 
   async checkItemStatusAndAvailability(itemCode: string, amount: number) {
@@ -165,9 +174,9 @@ export class TransactionService {
       let paymentAmount = paymentPrice;
       let changeAmount = paymentPrice - transaction.totalPrice;
 
-      if (paymentPrice != 0) {
-        paymentAmount = paymentPrice;
-        changeAmount = paymentPrice - transaction.totalPrice;
+      if (paymentMethod === 'DEBIT' || paymentMethod === 'TRANSFER') {
+        paymentAmount = transaction.totalPrice;
+        changeAmount = 0;
       }
 
       await this.modelPayment.updateOne(
@@ -225,9 +234,9 @@ export class TransactionService {
         totalPoint: transaction?.totalPoint,
         totalAmount: transaction?.totalAmount,
         paymentMethod: payments.paymentMethod,
-        paymentAmount: payments.paymentAmount,
+        paymentAmount: paymentAmount,
         paymentStatus: payments.paymentStatus,
-        changeAmount: payments.changeAmount,
+        changeAmount: changeAmount,
         paymentDate: transaction?.createdAt,
         items,
       };
@@ -321,7 +330,14 @@ export class TransactionService {
   }
 
   async getLastTransaction() {
-    const trx = await this.modelTransaction.find().sort({ createdAt: -1 });
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+    const trx = await this.modelTransaction.find({
+      createdAt: { $gte: startOfDay, $lte: endOfDay },
+    });
 
     const result = [];
     await Promise.all(
@@ -375,7 +391,8 @@ export class TransactionService {
       }),
     );
 
-    return result;
+    const sortDate = result.sort((a, b) => b.paymentDate - a.paymentDate);
+    return sortDate;
   }
 
   async findAll(day: any, month: any, year: any) {
@@ -412,5 +429,59 @@ export class TransactionService {
       paymentCode: paymentCode,
     });
     return payment;
+  }
+
+  async saveInvoice(file: any, paymentCode: string) {
+    try {
+      const pathFile = 'media/' + file.originalname;
+      await this.storageService.save(pathFile, file.mimetype, file.buffer, [
+        { mediaId: file.originalname },
+      ]);
+
+      await this.modelPayment.findOneAndUpdate(
+        {
+          paymentCode: paymentCode,
+        },
+        {
+          receiptPath: file.originalname,
+        },
+        {
+          new: true,
+        },
+      );
+
+      return { message: 'File berhasil disimpan', filename: file.originalname };
+    } catch (error) {
+      return { message: 'Gagal menyimpan file', error: error.message };
+    }
+  }
+
+  async getInvoice(res: any, paymentCode: any) {
+    let storageFile: StorageFile;
+    const payment = await this.modelPayment.findOne({
+      paymentCode: paymentCode,
+    });
+    try {
+      storageFile = await this.storageService.get(
+        'media/' + payment.receiptPath,
+      );
+    } catch (e) {
+      if (e.message.toString().includes('No such object')) {
+        throw new NotFoundException('image not found');
+      } else {
+        throw new ServiceUnavailableException('internal error');
+      }
+    }
+    if (storageFile && storageFile.contentType) {
+      res.setHeader('Content-Type', storageFile.contentType);
+    } else {
+      res.setHeader('Content-Type', 'application/octet-stream');
+    }
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="${payment.receiptPath}"`,
+    );
+    res.setHeader('Cache-Control', 'max-age=60d');
+    res.end(storageFile.buffer);
   }
 }

@@ -9,7 +9,7 @@ const paymentStatus = [
   'CANCELED',
 ];
 
-const paymentMethod = ['CASH', 'DEBIT'];
+const paymentMethod = ['CASH', 'DEBIT', 'TRANSFER'];
 
 @Schema({ timestamps: true })
 export class PaymentRelation extends Document {
@@ -33,6 +33,9 @@ export class PaymentRelation extends Document {
 
   @Prop({ type: String, enum: paymentStatus, default: 'SELECTING_PAYMENT' })
   paymentStatus: string;
+
+  @Prop({ type: String, default: null })
+  receiptPath: string;
 
   @Prop({ type: Date })
   expiredDate: Date;

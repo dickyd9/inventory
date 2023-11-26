@@ -23,14 +23,14 @@ export class JobService {
     // }
   }
 
-  @Cron(CronExpression.EVERY_MINUTE)
-  async handleEmptyItem() {
-    const checkEmpty = await this.itemService.getAllItem('product');
+  // @Cron(CronExpression.EVERY_MINUTE)
+  // async handleEmptyItem() {
+  //   const checkEmpty = await this.itemService.getAllItem('product');
 
-    for (const item of checkEmpty) {
-      if(item.itemAmount === 0) {
-        await this.itemService.updateItemStatus(item.itemCode);
-      }
-    }
-  }
+  //   for (const item of checkEmpty) {
+  //     if(item.itemAmount === 0) {
+  //       await this.itemService.updateItemStatus(item.itemCode);
+  //     }
+  //   }
+  // }
 }

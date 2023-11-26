@@ -40,16 +40,20 @@ export class ItemService {
     return category;
   }
 
-  async getAllItem(keyword: any): Promise<Item[]> {
+  async getAllItem(keyword: any, type: string): Promise<Item[]> {
+    const query: any = {};
+
     if (keyword) {
       const regex = new RegExp(keyword, 'i');
-      const item = await this.itemModel.find({
-        $or: [{ itemName: regex }, { itemCode: regex }],
-      });
-      return item;
+      query.$or = [{ itemName: regex }, { itemCode: regex }];
     }
-    const item = await this.itemModel.find();
-    return item;
+
+    if (type) {
+      query.itemType = type;
+    }
+
+    const items = await this.itemModel.find(query);
+    return items;
   }
 
   async getMenu(type: string): Promise<Item[]> {

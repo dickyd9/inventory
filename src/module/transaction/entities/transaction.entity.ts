@@ -30,7 +30,7 @@ export class Transaction extends Document {
   totalPrice: number;
 
   @Prop({ type: Boolean, default: false })
-  isDone: number;
+  isDone: boolean;
 
   @Prop({
     type: Date,

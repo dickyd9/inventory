@@ -33,8 +33,8 @@ export class ItemController {
 
   @Get()
   @UseInterceptors(ResponseInterceptor)
-  getItem(@Query('keyword') keyword: any) {
-    return this.itemService.getAllItem(keyword);
+  getItem(@Query('keyword') keyword: any, @Query('type') type: string) {
+    return this.itemService.getAllItem(keyword, type);
   }
 
   @Get('/menu')
