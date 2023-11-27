@@ -14,4 +14,9 @@ export class DashboardController {
   bestEmployee() {
     return this.dashboardService.bestEmployee();
   }
+
+  @Get('transactions')
+  getTrasnsactions() {
+    return this.dashboardService.lastTransaction();
+  }
 }

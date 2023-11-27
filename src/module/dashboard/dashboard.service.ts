@@ -86,4 +86,42 @@ export class DashboardService {
 
     return best;
   }
+
+  async lastTransaction() {
+    const trx = await this.modelTransaction
+      .find()
+      .sort({ createdAt: 1 })
+      .limit(5)
+      .select(
+        'paymentCode customerCode createdAt totalPrice totalAmount totalPoint',
+      );
+
+    const result = [];
+    await Promise.all(
+      trx.map(async (e: any) => {
+        const payment = await this.modelPayment.findOne({
+          paymentCode: e.paymentCode,
+        });
+
+        const customer = await this.modelCustomer.findOne({
+          customerCode: e?.customerCode,
+        });
+
+        if (payment) {
+          const detail = {
+            invoice: payment?.invoiceCode,
+            paymentCode: payment?.paymentCode,
+            customerName: customer.customerName,
+            totalPrice: e.totalPrice,
+            totalPoint: e.totalPoint,
+            paymentDate: e?.createdAt,
+          };
+
+          result.push(detail);
+        }
+      }),
+    );
+
+    return result;
+  }
 }

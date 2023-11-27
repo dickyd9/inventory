@@ -337,7 +337,7 @@ export class TransactionService {
     endOfDay.setHours(23, 59, 59, 999);
     const trx = await this.modelTransaction.find({
       createdAt: { $gte: startOfDay, $lte: endOfDay },
-    });
+    }).limit(3);
 
     const result = [];
     await Promise.all(
