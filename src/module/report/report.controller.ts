@@ -15,6 +15,7 @@ export class ReportController {
   constructor(private readonly reportService: ReportService) {}
 
   @Get('transaction')
+  @UseInterceptors(ResponseInterceptor)
   transactionReport(
     @Query('report')
     report: any,
@@ -30,16 +31,18 @@ export class ReportController {
 
   @Get('service')
   serviceReport(
-    @Query('report')
-    report: any,
-    @Query('day')
-    day: any,
-    @Query('month')
-    month: any,
-    @Query('year')
-    year: any,
+    @Query('keyword') keyword: string,
+    @Query('month') month: string,
+    @Query('year') year: string,
+    @Query('sortColumn') sortColumn: string,
+    @Query('sortDirection') sortDirection: string,
   ) {
-    return this.reportService.reportTransaction(report, month, year);
+    return this.reportService.reportService(
+      month,
+      year,
+      sortColumn,
+      sortDirection,
+    );
   }
 
   @Post('expenses')

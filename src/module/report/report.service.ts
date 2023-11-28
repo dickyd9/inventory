@@ -7,6 +7,7 @@ import { Employee } from '../employee/entities/employee.entity';
 import { CreateExpenses } from './dto/create-expenses.dto';
 import { Expenses } from './entities/expense.entity';
 import { PaymentRelation } from '../transaction/entities/payment-relation';
+import { Customer } from '../customer/entities/customer.entity';
 
 @Injectable()
 export class ReportService {
@@ -16,111 +17,152 @@ export class ReportService {
     @InjectModel('PaymentRelation')
     private modelPayment: Model<PaymentRelation>,
     @InjectModel('Employee') private modelEmployee: Model<Employee>,
+    @InjectModel('Customer') private modelCustomer: Model<Customer>,
     @InjectModel('Expenses') private modelExpenses: Model<Expenses>,
   ) {}
 
   async reportTransaction(report: string, month: any, year: any) {
-    const query: any = {};
+    const trx = await this.modelTransaction.find();
 
-    // if (day && month && year) {
-    //   const awalBulan = new Date(year, month - 1, day);
-    //   const akhirBulan = new Date(year, month - 1, day, 23, 59, 59, 999);
-    //   query.createdAt = { $gte: awalBulan, $lte: akhirBulan };
-    // } else if (month && year) {
-    //   const awalBulan = new Date(year, month - 1, 1);
-    //   const akhirBulan = new Date(year, month, 0, 23, 59, 59, 999);
-    //   query.createdAt = { $gte: awalBulan, $lte: akhirBulan };
-    // }
+    const result = [];
+    await Promise.all(
+      trx.map(async (e: any) => {
+        const payment = await this.modelPayment.findOne({
+          paymentCode: e.paymentCode,
+        });
+        const customer = await this.modelCustomer.findOne({
+          customerCode: e.customerCode,
+        });
 
-    const reports = {
-      totalPrice: null,
-      totalPoint: null,
-      totalTransaction: null,
-      report: report,
-      transaction: null,
-    };
-    if (report === 'Bulanan' && month && year) {
-      const awalBulan = new Date(year, month - 1, 1);
-      const akhirBulan = new Date(year, month, 0, 23, 59, 59, 999);
-      query.createdAt = { $gte: awalBulan, $lte: akhirBulan };
+        const items = [];
+        if (Array.isArray(e.item)) {
+          for (const item of e.item) {
+            const itm = await this.modelItem.findOne({
+              itemCode: item.itemCode,
+            });
 
-      // const transaction = await this.modelTransaction.find(query);
-      const transaction = await this.modelTransaction.aggregate([
-        {
-          $lookup: {
-            from: 'customers', // Nama koleksi customer
-            localField: 'customerCode', // Field di koleksi transaksi
-            foreignField: 'customerCode', // Field di koleksi customer
-            as: 'customerData', // Nama field untuk data customer yang akan di-lookup
-          },
-        },
-        {
-          $unwind: '$customerData',
-        },
-        {
-          $project: {
-            customerName: '$customerData.customerName',
-          },
-        },
-        {
-          $match: query,
-        },
-      ]);
-      reports.totalTransaction = transaction.length;
-      reports.transaction = transaction;
+            const itemResult = {
+              itemName: itm.itemName,
+              itemPrice: itm.itemPrice,
+              itemAmount: item.amount,
+              itemPoint: itm.itemPoint,
+              totalPoint: itm.itemPoint * item.amount,
+              totalAmount: item.amount,
+              totalPrice: item.amount * itm.itemPrice,
+            };
 
-      for (const trx of transaction) {
-        reports.totalPrice += trx.totalPrice;
-        reports.totalPoint += trx.totalPoint;
-      }
-    } else {
-      throw new HttpException('Data tidak ditemukan', HttpStatus.NOT_FOUND);
-    }
+            items.push(itemResult);
+          }
+        }
 
-    if (!reports.transaction.length) {
-      throw new HttpException('Data tidak ditemukan', HttpStatus.NOT_FOUND);
-    }
+        if (payment) {
+          const detail = {
+            invoice: payment?.invoiceCode,
+            paymentCode: payment?.paymentCode,
+            customerName: customer.customerName,
+            totalPrice: e.totalPrice,
+            totalPoint: e.totalPoint,
+            totalAmount: e.totalAmount,
+            paymentMethod: payment.paymentMethod,
+            paymentAmount: payment.paymentAmount,
+            paymentStatus: payment.paymentStatus,
+            changeAmount: payment.changeAmount,
+            paymentDate: e?.createdAt,
+            totalItem: items.length,
+          };
 
-    return reports;
+          result.push(detail);
+        }
+      }),
+    );
+
+    const sortDate = result.sort((a, b) => b.paymentDate - a.paymentDate);
+    return sortDate;
   }
 
-  async reportService(report: string, month: any, year: any, itemCode: any) {
+  async reportService(
+    month: any,
+    year: any,
+    sortColumn: string,
+    sortDirection: string,
+  ) {
     const query: any = {};
 
-    const reports = {
-      totaltem: null,
-      transactionItem: null,
-      report: report,
-      serviceName: itemCode ? itemCode : 'all',
-      service: null,
-    };
-    if (report === 'Bulanan' && month && year) {
+    if (month && year) {
       const awalBulan = new Date(year, month - 1, 1);
       const akhirBulan = new Date(year, month, 0, 23, 59, 59, 999);
       query.createdAt = { $gte: awalBulan, $lte: akhirBulan };
-
-      if (itemCode) {
-        query.itemCode = itemCode;
-      }
-
-      const transaction = await this.modelTransaction.find(query);
-      const service = await this.modelItem.find(query);
-      reports.totaltem = service.length;
-      // reports.transaction = transaction;
-
-      // for (const trx of transaction) {
-      //   reports.totalPrice += trx.totalPrice;
-      //   reports.totalPoint += trx.totalPoint;
-      // }
     } else {
       throw new HttpException('Data tidak ditemukan', HttpStatus.NOT_FOUND);
     }
 
-    // if (!reports.transaction.length) {
-    //   throw new HttpException('Data tidak ditemukan', HttpStatus.NOT_FOUND);
-    // }
+    const result = await this.modelTransaction.aggregate([
+      {
+        $match: query,
+      },
+      { $unwind: '$item' },
+      {
+        $group: {
+          _id: '$item.itemCode',
+          itemName: { $first: '$item.itemName' },
+          amountUsed: { $sum: '$item.amount' },
+          pointUsed: { $sum: '$item.itemPoint' },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          itemCode: '$_id',
+          itemName: 1,
+          amountUsed: 1,
+          pointUsed: 1,
+        },
+      },
+    ]);
 
-    return reports;
+    // Membuat lookup ke koleksi item untuk mengambil itemName dan itemPrice
+    const summaryWithDetails = await this.modelItem.aggregate([
+      {
+        $match: {
+          itemCode: { $in: result.map((item) => item.itemCode) },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          itemCode: 1,
+          itemName: 1,
+          itemPrice: 1,
+        },
+      },
+    ]);
+
+    // Menggabungkan hasil lookup dengan hasil sebelumnya
+    const finalResult = result.map((item) => {
+      const itemDetails = summaryWithDetails.find(
+        (detail) => detail.itemCode === item.itemCode,
+      );
+      return {
+        ...item,
+        itemName: itemDetails?.itemName || null,
+        totalPrice: item.amountUsed * itemDetails?.itemPrice,
+      };
+    });
+
+    const direction =
+      sortDirection === 'asc' ? 1 : sortDirection === 'desc' ? -1 : 0;
+
+    finalResult.sort((a, b) => {
+      if (a[sortColumn] < b[sortColumn]) {
+        return -1 * direction;
+      }
+      if (a[sortColumn] > b[sortColumn]) {
+        return 1 * direction;
+      }
+      return 0;
+    });
+
+    return finalResult;
   }
 
   async addExpenses(createExpenses: CreateExpenses) {

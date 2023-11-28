@@ -26,7 +26,7 @@ export class DashboardService {
   async generalReport() {
     const items = await this.modelItem.find();
     const customers = await this.modelCustomer.find();
-    const employees = await this.modelCustomer.find();
+    const employees = await this.modelEmployee.find();
     const payments = await this.modelPayment.find({
       paymentStatus: 'PAID',
     });
