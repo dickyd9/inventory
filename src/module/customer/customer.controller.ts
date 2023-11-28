@@ -29,6 +29,11 @@ export class CustomerController {
     return this.customerService.findAll(keyword);
   }
 
+  @Get('all')
+  posCustomerList(@Query('keyword') keyword: any) {
+    return this.customerService.findAll(keyword);
+  }
+
   @Get(':customerCode')
   findOne(@Param('customerCode') customerCode: string) {
     return this.customerService.findOne(customerCode);
