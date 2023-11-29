@@ -45,6 +45,22 @@ export class ReportController {
     );
   }
 
+  @Get('employee')
+  employeeReport(
+    @Query('keyword') keyword: string,
+    @Query('month') month: string,
+    @Query('year') year: string,
+    @Query('sortColumn') sortColumn: string,
+    @Query('sortDirection') sortDirection: string,
+  ) {
+    return this.reportService.reportEmployee(
+      month,
+      year,
+      sortColumn,
+      sortDirection,
+    );
+  }
+
   @Post('expenses')
   createExpenses(@Body() createExpenses: CreateExpenses) {
     return this.reportService.addExpenses(createExpenses);

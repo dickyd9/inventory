@@ -21,7 +21,7 @@ export class ReportService {
     @InjectModel('Expenses') private modelExpenses: Model<Expenses>,
   ) {}
 
-  async reportTransaction(report: string, month: any, year: any) {
+  async reportTransaction(report: any, month: any, year: any) {
     const trx = await this.modelTransaction.find();
 
     const result = [];
@@ -163,6 +163,111 @@ export class ReportService {
     });
 
     return finalResult;
+  }
+
+  async reportEmployee(
+    month: any,
+    year: any,
+    sortColumn: string,
+    sortDirection: string,
+  ) {
+    const query: any = {};
+
+    if (month && year) {
+      const awalBulan = new Date(year, month - 1, 1);
+      const akhirBulan = new Date(year, month, 0, 23, 59, 59, 999);
+      query.createdAt = { $gte: awalBulan, $lte: akhirBulan };
+    } else {
+      throw new HttpException('Data tidak ditemukan', HttpStatus.NOT_FOUND);
+    }
+
+    const result = await this.modelTransaction.aggregate([
+      {
+        $match: query,
+      },
+      { $unwind: '$item' },
+      {
+        $group: {
+          _id: '$item.itemCode',
+          employeeCode: { $first: '$item.employeeCode' },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          itemCode: '$_id',
+          employeeCode: 1,
+        },
+      },
+    ]);
+
+    // Membuat lookup ke koleksi item untuk mengambil itemName dan itemPrice
+    const summaryWithDetails = await this.modelItem.aggregate([
+      {
+        $match: {
+          itemCode: { $in: result.map((item) => item.itemCode) },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          itemCode: 1,
+          itemName: 1,
+          itemPrice: 1,
+        },
+      },
+    ]);
+
+    const employee = await this.modelEmployee.aggregate([
+      {
+        $project: {
+          _id: 0,
+          employeeCode: 1,
+          employeeName: 1,
+        },
+      },
+    ]);
+
+    const finalEmployee = employee.map((emp) => {
+      const itemsInTrx = result.find(
+        (trx) => trx.employeeCode === emp.employeeCode,
+      );
+
+      const employeeTaskUsed = itemsInTrx ? [itemsInTrx] : [];
+      return {
+        ...emp,
+        employeeTaskUsed: employeeTaskUsed.length,
+        transaction: employeeTaskUsed
+      };
+    });
+
+    // Menggabungkan hasil lookup dengan hasil sebelumnya
+    // const finalResult = result.map((item) => {
+    //   const itemDetails = summaryWithDetails.find(
+    //     (detail) => detail.itemCode === item.itemCode,
+    //   );
+
+    //   return {
+    //     ...item,
+    //     itemName: itemDetails?.itemName || null,
+    //     totalPrice: item.amountUsed * itemDetails?.itemPrice,
+    //   };
+    // });
+
+    // const direction =
+    //   sortDirection === 'asc' ? 1 : sortDirection === 'desc' ? -1 : 0;
+
+    // finalResult.sort((a, b) => {
+    //   if (a[sortColumn] < b[sortColumn]) {
+    //     return -1 * direction;
+    //   }
+    //   if (a[sortColumn] > b[sortColumn]) {
+    //     return 1 * direction;
+    //   }
+    //   return 0;
+    // });
+
+    return finalEmployee;
   }
 
   async addExpenses(createExpenses: CreateExpenses) {
