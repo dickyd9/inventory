@@ -433,7 +433,7 @@ export class TransactionService {
 
   async saveInvoice(file: any, paymentCode: string) {
     try {
-      const pathFile = 'media/' + file.originalname;
+      const pathFile = 'dev/' + file.originalname;
       await this.storageService.save(pathFile, file.mimetype, file.buffer, [
         { mediaId: file.originalname },
       ]);
@@ -463,7 +463,7 @@ export class TransactionService {
     });
     try {
       storageFile = await this.storageService.get(
-        'media/' + payment.receiptPath,
+        'dev/' + payment.receiptPath,
       );
     } catch (e) {
       if (e.message.toString().includes('No such object')) {

@@ -34,4 +34,4 @@ spec:
             value: Asdamf435r34j==
 
           ports:
-            - containerPort: 3000
+            - containerPort: 3009
