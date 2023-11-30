@@ -12,6 +12,9 @@ export class Expenses extends Document {
   @Prop({ type: Number })
   amount: number;
 
+  @Prop({ type: String })
+  paymentMethod: string;
+
   @Prop({ type: Number })
   price: number;
 
