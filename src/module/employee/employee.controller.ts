@@ -8,6 +8,7 @@ import {
   Delete,
   Query,
   UseInterceptors,
+  Put,
 } from '@nestjs/common';
 import { EmployeeService } from './employee.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
@@ -56,16 +57,16 @@ export class EmployeeController {
     return this.employeeService.asignTask(itemCode, employee);
   }
 
-  @Patch(':employeeCode')
+  @Put(':employeeId')
   update(
-    @Param('employeeCode') employeeCode: string,
+    @Param('employeeId') employeeId: string,
     @Body() updateEmployeeDto: UpdateEmployeeDto,
   ) {
-    return this.employeeService.update(employeeCode, updateEmployeeDto);
+    return this.employeeService.update(employeeId, updateEmployeeDto);
   }
 
-  @Delete(':employeeCode')
-  remove(@Param('employeeCode') employeeCode: string) {
-    return this.employeeService.remove(employeeCode);
+  @Delete(':employeeId')
+  remove(@Param('employeeId') employeeId: string) {
+    return this.employeeService.remove(employeeId);
   }
 }

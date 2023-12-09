@@ -30,7 +30,7 @@ export class ItemController {
     return this.itemService.getAllItem(keyword, type);
   }
 
-  @Patch(':itemId')
+  @Put(':itemId')
   update(
     @Param('itemId') itemId: string,
     @Body() updateItemDto: UpdateItemDto,

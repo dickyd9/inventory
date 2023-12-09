@@ -145,9 +145,9 @@ export class EmployeeService {
     // console.log(task)
   }
 
-  async update(employeeCode: string, updateEmployeeDto: UpdateEmployeeDto) {
+  async update(employeeId: string, updateEmployeeDto: UpdateEmployeeDto) {
     const employee = await this.modelEmployee.findOne({
-      employeeCode: employeeCode,
+      _id: employeeId,
     });
 
     const result = await employee.updateOne({
@@ -160,9 +160,9 @@ export class EmployeeService {
     };
   }
 
-  async remove(employeeCode: string) {
+  async remove(employeeId: string) {
     const employee = await this.modelEmployee.findOne({
-      employeeCode: employeeCode,
+      _id: employeeId,
     });
 
     const result = await employee.updateOne({
