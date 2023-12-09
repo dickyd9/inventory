@@ -21,7 +21,7 @@ export class ItemService {
     const item = new this.itemModel(createItemDto);
     const result = await item.save();
     return {
-      status: 'Success add item',
+      message: 'Success add item',
       name: result.itemName,
       code: result.itemCode,
       count: 1,
