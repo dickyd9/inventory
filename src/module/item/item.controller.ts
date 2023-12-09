@@ -24,36 +24,22 @@ export class ItemController {
     return this.itemService.createItem(createItemDto);
   }
 
-  @Post('category')
-  createCategoryItem(
-    @Body() categoryItem: { categoryCode: string; categoryName: string },
-  ) {
-    return this.itemService.createCategoryItem(categoryItem);
-  }
-
   @Get()
   @UseInterceptors(ResponseInterceptor)
   getItem(@Query('keyword') keyword: any, @Query('type') type: string) {
     return this.itemService.getAllItem(keyword, type);
   }
 
-  @Get('/menu')
-  getMenu(@Query('type') type: string) {
-    return this.itemService.getMenu(type);
+  @Patch(':itemId')
+  update(
+    @Param('itemId') itemId: string,
+    @Body() updateItemDto: UpdateItemDto,
+  ) {
+    return this.itemService.update(itemId, updateItemDto);
   }
 
-  // @Get(':id')
-  // itemDetail(@Param('id') itemId: string) {
-  //   return this.itemService.getDetailItem(itemId);
-  // }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateItemDto: UpdateItemDto) {
-    return this.itemService.update(+id, updateItemDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.itemService.remove(id);
+  @Delete(':itemId')
+  remove(@Param('itemId') itemId: string) {
+    return this.itemService.remove(itemId);
   }
 }

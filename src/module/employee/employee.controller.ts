@@ -56,16 +56,16 @@ export class EmployeeController {
     return this.employeeService.asignTask(itemCode, employee);
   }
 
-  @Patch(':id')
+  @Patch(':employeeCode')
   update(
-    @Param('id') id: string,
+    @Param('employeeCode') employeeCode: string,
     @Body() updateEmployeeDto: UpdateEmployeeDto,
   ) {
-    return this.employeeService.update(+id, updateEmployeeDto);
+    return this.employeeService.update(employeeCode, updateEmployeeDto);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.employeeService.remove(+id);
+  @Delete(':employeeCode')
+  remove(@Param('employeeCode') employeeCode: string) {
+    return this.employeeService.remove(employeeCode);
   }
 }

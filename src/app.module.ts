@@ -27,6 +27,8 @@ import { CustomerModule } from './module/customer/customer.module';
 import { ReportModule } from './module/report/report.module';
 import { DashboardModule } from './module/dashboard/dashboard.module';
 import { StorageModule } from './common/storage/storage.module';
+import { ServicesModule } from './module/services/services.module';
+import { PosModule } from './module/pos/pos.module';
 
 @Module({
   imports: [
@@ -75,6 +77,8 @@ import { StorageModule } from './common/storage/storage.module';
     ReportModule,
     DashboardModule,
     StorageModule,
+    ServicesModule,
+    PosModule,
   ],
   controllers: [AppController],
   providers: [

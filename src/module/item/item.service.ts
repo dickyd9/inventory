@@ -24,20 +24,8 @@ export class ItemService {
       status: 'Success add item',
       name: result.itemName,
       code: result.itemCode,
-      type: result.itemType,
       count: 1,
     };
-  }
-
-  async createCategoryItem(categoryItem: object) {
-    const category = new this.itemCategoryModel(categoryItem);
-    const result = await category.save();
-    return result;
-  }
-
-  async getCategoryItem() {
-    const category = await this.itemCategoryModel.find();
-    return category;
   }
 
   async getAllItem(keyword: any, type: string): Promise<Item[]> {
@@ -56,16 +44,6 @@ export class ItemService {
     return items;
   }
 
-  async getMenu(type: string): Promise<Item[]> {
-    if (type) {
-      const item = await this.itemModel.find({ itemType: type });
-      return item;
-    } else {
-      const item = await this.itemModel.find();
-      return item;
-    }
-  }
-
   async findOne(itemId: string) {
     const item = await this.itemModel
       .findById(itemId)
@@ -82,12 +60,20 @@ export class ItemService {
     return itemempty;
   }
 
-  update(id: number, updateItemDto: UpdateItemDto) {
-    return `This action updates a #${id} item`;
+  async update(itemId: string, updateItemDto: UpdateItemDto) {
+    const item = await this.itemModel.findOne({ _id: itemId });
+    const result = await item.updateOne(updateItemDto);
+    return {
+      message: 'Item Updated!',
+      result,
+    };
   }
 
-  async remove(id: string) {
-    await this.itemModel.findOneAndDelete({ _id: id });
+  async remove(itemId: string) {
+    await this.itemModel.findOneAndUpdate(
+      { _id: itemId },
+      { deletedAt: new Date() },
+    );
     return {
       message: 'Success delete Item',
       count: 1,
