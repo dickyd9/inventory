@@ -45,8 +45,8 @@ export class ReportService {
               itemName: itm.itemName,
               itemPrice: itm.itemPrice,
               itemAmount: item.amount,
-              itemPoint: itm.itemPoint,
-              totalPoint: itm.itemPoint * item.amount,
+              // itemPoint: itm.itemPoint,
+              // totalPoint: itm.itemPoint * item.amount,
               totalAmount: item.amount,
               totalPrice: item.amount * itm.itemPrice,
             };

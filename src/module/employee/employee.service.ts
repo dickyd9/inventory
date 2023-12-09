@@ -33,6 +33,7 @@ export class EmployeeService {
     const regexPattern = new RegExp(keyword, 'i');
     const business = await this.modelEmployee.find({
       employeeName: regexPattern,
+      deletedAt: null,
     });
     return business;
   }
@@ -141,15 +142,36 @@ export class EmployeeService {
     // const task = await this.modelEmployeeTask.find({
     //   'employee.employeeCode': { $elemMatch: { employeeCode: employeeCode } },
     // });
-
     // console.log(task)
   }
 
-  update(id: number, updateEmployeeDto: UpdateEmployeeDto) {
-    return `This action updates a #${id} employee`;
+  async update(employeeCode: string, updateEmployeeDto: UpdateEmployeeDto) {
+    const employee = await this.modelEmployee.findOne({
+      employeeCode: employeeCode,
+    });
+
+    const result = await employee.updateOne({
+      updateEmployeeDto,
+    });
+
+    return {
+      message: 'Employee Updated!',
+      result,
+    };
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} employee`;
+  async remove(employeeCode: string) {
+    const employee = await this.modelEmployee.findOne({
+      employeeCode: employeeCode,
+    });
+
+    const result = await employee.updateOne({
+      deletedAt: new Date(),
+    });
+
+    return {
+      message: 'Employee Deleted!',
+      result,
+    };
   }
 }

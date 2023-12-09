@@ -9,15 +9,9 @@ export class CreateItemDto {
 
   @IsString()
   @IsOptional()
-  itemCategory: string;
+  itemUnit: string;
 
   @IsNumber()
   @IsOptional()
-  itemPoint: number;
-
-  @IsString()
-  itemType: string;
-
-  @IsString()
-  itemStatus: string;
+  itemAmount: number;
 }

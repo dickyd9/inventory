@@ -13,8 +13,8 @@ export class Transaction extends Document {
   customerCode: string;
 
   @Prop({ type: Object, default: null })
-  item: {
-    itemCode: string;
+  service: {
+    serviceCode: string;
     amount: number;
     point: number;
     employeeCode: string;

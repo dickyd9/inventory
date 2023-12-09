@@ -11,3 +11,11 @@ export class ItemCategory extends Document {
 }
 
 export const ItemCategorySchema = SchemaFactory.createForClass(ItemCategory);
+
+ItemCategorySchema.pre('save', function (next) {
+  const randomPart = Math.random().toString().slice(2, 6);
+
+  this.categoryCode = randomPart;
+
+  next();
+});

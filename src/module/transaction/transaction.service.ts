@@ -16,11 +16,13 @@ import { Employee } from '../employee/entities/employee.entity';
 import { Customer } from '../customer/entities/customer.entity';
 import { StorageService } from 'src/common/storage/storage.service';
 import { StorageFile } from 'src/common/storage/storage.file';
+import { Services } from '../services/entities/service.entity';
 
 @Injectable()
 export class TransactionService {
   constructor(
     @InjectModel('Item') private modelItem: Model<Item>,
+    @InjectModel('Services') private modelServices: Model<Services>,
     @InjectModel('Transaction') private modelTransaction: Model<Transaction>,
     @InjectModel('Employee') private modelEmployee: Model<Employee>,
     @InjectModel('EmployeeTaskReport')
@@ -80,37 +82,39 @@ export class TransactionService {
     };
   }
 
-  async addItem(paymentCode: any, items: any) {
+  async addItem(paymentCode: any, services: any) {
     const math = {
       totalAmount: 0,
       totalPrice: 0,
       totalPoint: 0,
     };
 
-    const itemsData = [];
+    const servicesData = [];
 
-    for (const item of items?.data) {
-      const { itemCode, amount, employeeCode } = item;
-      const { itemPoint, itemPrice } = await this.modelItem.findOne({
-        itemCode: itemCode,
-      });
+    for (const service of services?.data) {
+      const { serviceCode, amount, employeeCode } = service;
+      const { servicesPoint, servicesPrice } = await this.modelServices.findOne(
+        {
+          servicesCode: serviceCode,
+        },
+      );
 
-      itemsData.push({
-        itemCode,
+      servicesData.push({
+        serviceCode,
         amount,
-        itemPoint,
+        servicesPoint,
         employeeCode,
       });
 
-      math.totalPoint += itemPoint;
+      math.totalPoint += servicesPoint;
 
-      math.totalPrice += itemPrice * amount;
+      math.totalPrice += servicesPrice * amount;
 
       math.totalAmount += amount;
     }
 
     const transaction = {
-      item: itemsData,
+      service: servicesData,
       ...math,
     };
 
@@ -130,9 +134,9 @@ export class TransactionService {
 
       return {
         status: HttpStatus.CREATED,
-        message: 'Item Updated',
+        message: 'Services Updated',
         paymentCode: paymentCode,
-        itemAmount: items.length,
+        serviceAmount: services.length,
       };
     }
   }
@@ -205,24 +209,24 @@ export class TransactionService {
         customerCode: transaction.customerCode,
       });
 
-      const items = [];
-      if (Array.isArray(transaction.item)) {
-        for (const item of transaction.item) {
-          const itm = await this.modelItem.findOne({
-            itemCode: item.itemCode,
+      const services = [];
+      if (Array.isArray(transaction.service)) {
+        for (const service of transaction.service) {
+          const itm = await this.modelServices.findOne({
+            servicesCode: service.serviceCode,
           });
 
-          const itemResult = {
-            itemName: itm.itemName,
-            itemPrice: itm.itemPrice,
-            itemAmount: item.amount,
-            itemPoint: itm.itemPoint,
-            totalPoint: itm.itemPoint * item.amount,
-            totalAmount: item.amount,
-            totalPrice: item.amount * itm.itemPrice,
+          const serviceResult = {
+            serviceName: itm.servicesName,
+            servicePrice: itm.servicesPrice,
+            serviceAmount: service.amount,
+            servicePoint: itm.servicesPoint,
+            totalPoint: itm.servicesPoint * service.amount,
+            totalAmount: service.amount,
+            totalPrice: service.amount * itm.servicesPrice,
           };
 
-          items.push(itemResult);
+          services.push(serviceResult);
         }
       }
 
@@ -238,7 +242,7 @@ export class TransactionService {
         paymentStatus: payments.paymentStatus,
         changeAmount: changeAmount,
         paymentDate: transaction?.createdAt,
-        items,
+        services,
       };
 
       return {
@@ -335,9 +339,11 @@ export class TransactionService {
 
     const endOfDay = new Date();
     endOfDay.setHours(23, 59, 59, 999);
-    const trx = await this.modelTransaction.find({
-      createdAt: { $gte: startOfDay, $lte: endOfDay },
-    }).limit(3);
+    const trx = await this.modelTransaction
+      .find({
+        createdAt: { $gte: startOfDay, $lte: endOfDay },
+      })
+      .limit(3);
 
     const result = [];
     await Promise.all(
@@ -349,24 +355,24 @@ export class TransactionService {
           customerCode: e.customerCode,
         });
 
-        const items = [];
-        if (Array.isArray(e.item)) {
-          for (const item of e.item) {
-            const itm = await this.modelItem.findOne({
-              itemCode: item.itemCode,
+        const services = [];
+        if (Array.isArray(e.service)) {
+          for (const service of e.service) {
+            const itm = await this.modelServices.findOne({
+              servicesCode: service.servicesCode,
             });
 
-            const itemResult = {
-              itemName: itm.itemName,
-              itemPrice: itm.itemPrice,
-              itemAmount: item.amount,
-              itemPoint: itm.itemPoint,
-              totalPoint: itm.itemPoint * item.amount,
-              totalAmount: item.amount,
-              totalPrice: item.amount * itm.itemPrice,
+            const serviceResult = {
+              servicesName: itm.servicesName,
+              servicesPrice: itm.servicesPrice,
+              servicesAmount: service.amount,
+              servicesPoint: itm.servicesPoint,
+              totalPoint: itm.servicesPoint * service.amount,
+              totalAmount: service.amount,
+              totalPrice: service.amount * itm.servicesPrice,
             };
 
-            items.push(itemResult);
+            services.push(serviceResult);
           }
         }
 
@@ -383,7 +389,7 @@ export class TransactionService {
             paymentStatus: payment.paymentStatus,
             changeAmount: payment.changeAmount,
             paymentDate: e?.createdAt,
-            items,
+            services,
           };
 
           result.push(detail);

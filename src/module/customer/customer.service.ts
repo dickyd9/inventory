@@ -7,12 +7,14 @@ import { Model } from 'mongoose';
 import { Customer } from './entities/customer.entity';
 import { Transaction } from '../transaction/entities/transaction.entity';
 import { Item } from '../item/entities/item.entity';
+import { Services } from '../services/entities/service.entity'
 
 @Injectable()
 export class CustomerService {
   constructor(
     @InjectModel('Customer') private customerModel: Model<Customer>,
     @InjectModel('Item') private modelItem: Model<Item>,
+    @InjectModel('Services') private modelServices: Model<Services>,
     @InjectModel('Transaction')
     private modelTransaction: Model<Transaction>,
   ) {}
@@ -73,15 +75,15 @@ export class CustomerService {
         totalPoint: trx.totalPoint,
         totalAmount: trx.totalAmount,
         totalPrice: trx.totalPrice,
-        item: [],
+        service: [],
       };
-      for (const item of trx.item) {
-        const itm = await this.modelItem.findOne({ itemCode: item.itemCode });
-        trxRef.item.push({
-          itemCode: itm.itemCode,
-          itemName: itm.itemName,
-          itemPrice: itm.itemPrice,
-          itemPoint: itm.itemPoint,
+      for (const service of trx.service) {
+        const itm = await this.modelServices.findOne({ servicesCode: service.serviceCode });
+        trxRef.service.push({
+          serviceCode: itm.servicesCode,
+          serviceName: itm.servicesName,
+          servicePrice: itm.servicesPrice,
+          servicePoint: itm.servicesPoint,
         });
       }
       report.transaction.push(trxRef);

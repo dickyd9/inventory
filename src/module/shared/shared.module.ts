@@ -4,6 +4,7 @@ import { userSchema } from '../user/entities/user.entity';
 import { BusinessSchema } from '../business/entities/business.entity';
 import { profileUserSchema } from '../user/entities/profile-user.entity';
 import { TransactionSchema } from '../transaction/entities/transaction.entity';
+import { ServicesSchema } from '../services/entities/service.entity';
 import { ItemSchema } from '../item/entities/item.entity';
 import { PaymentRelationSchema } from '../transaction/entities/payment-relation';
 import { ItemCategorySchema } from '../item/entities/item.category';
@@ -16,6 +17,7 @@ import { EmployeeTaskReportSchema } from '../employee/entities/employee.task.rep
 import { EmployeeTaskSchema } from '../employee/entities/employee.task';
 import { userLogSchema } from '../user/entities/user-log-entity';
 import { ExpensesSchema } from '../report/entities/expense.entity';
+import { ServicesCategorySchema } from '../services/entities/service.category.entity';
 
 @Module({
   imports: [
@@ -27,6 +29,8 @@ import { ExpensesSchema } from '../report/entities/expense.entity';
       { name: 'UserRole', schema: userRoleSchema },
       { name: 'Business', schema: BusinessSchema },
       { name: 'ProfileUser', schema: profileUserSchema },
+      { name: 'Services', schema: ServicesSchema },
+      { name: 'ServicesCategory', schema: ServicesCategorySchema },
       { name: 'Item', schema: ItemSchema },
       { name: 'ItemCategory', schema: ItemCategorySchema },
       { name: 'Transaction', schema: TransactionSchema },
@@ -48,6 +52,8 @@ import { ExpensesSchema } from '../report/entities/expense.entity';
       { name: 'UserRole', schema: userRoleSchema },
       { name: 'Business', schema: BusinessSchema },
       { name: 'ProfileUser', schema: profileUserSchema },
+      { name: 'Services', schema: ServicesSchema },
+      { name: 'ServicesCategory', schema: ServicesCategorySchema },
       { name: 'Item', schema: ItemSchema },
       { name: 'ItemCategory', schema: ItemCategorySchema },
       { name: 'Transaction', schema: TransactionSchema },
