@@ -8,11 +8,13 @@ import { PaymentRelation } from '../transaction/entities/payment-relation';
 import { Employee } from '../employee/entities/employee.entity';
 import { ReportService } from '../report/report.service';
 import { EmployeeTaskReport } from '../employee/entities/employee.task.report';
+import { Services } from '../services/entities/service.entity';
 
 @Injectable()
 export class DashboardService {
   constructor(
     @InjectModel('Item') private modelItem: Model<Item>,
+    @InjectModel('Services') private modelServices: Model<Services>,
     @InjectModel('Transaction') private modelTransaction: Model<Transaction>,
     @InjectModel('Customer') private modelCustomer: Model<Customer>,
     @InjectModel('Employee') private modelEmployee: Model<Employee>,
@@ -25,6 +27,7 @@ export class DashboardService {
 
   async generalReport() {
     const items = await this.modelItem.find();
+    const services = await this.modelServices.find();
     const customers = await this.modelCustomer.find();
     const employees = await this.modelEmployee.find();
     const payments = await this.modelPayment.find({
@@ -37,24 +40,28 @@ export class DashboardService {
         title: 'Transaksi',
         key: 'transactionReport',
         data: payments.length,
+        link: '/transaction-report',
       },
       {
         icon: 'Monitor',
         title: 'Jasa',
-        key: 'itemsReport',
-        data: items.length,
+        key: 'servicesReport',
+        data: services.length,
+        link: '/itemService',
       },
       {
         icon: 'User',
         title: 'Pelanggan',
         key: 'customerReport',
         data: customers.length,
+        link: '/list-customer',
       },
       {
         icon: 'User',
         title: 'Karyawan',
         key: 'employeeReport',
         data: employees.length,
+        link: '/list-employee',
       },
     ];
 

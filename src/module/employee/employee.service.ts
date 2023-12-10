@@ -146,17 +146,24 @@ export class EmployeeService {
   }
 
   async update(employeeId: string, updateEmployeeDto: UpdateEmployeeDto) {
-    const employee = await this.modelEmployee.findOne({
-      _id: employeeId,
-    });
+    const employee = await this.modelEmployee.findByIdAndUpdate(
+      {
+        _id: employeeId,
+      },
+      { updateEmployeeDto },
+    );
 
-    const result = await employee.updateOne({
-      updateEmployeeDto,
-    });
+    // console.log(
+    //   'employeeInput:' + updateEmployeeDto,
+    //   'employeeData: ' + employee,
+    // );
+    // const result = await employee.updateOne({
+    //   updateEmployeeDto,
+    // });
 
     return {
       message: 'Employee Updated!',
-      result,
+      employee,
     };
   }
 

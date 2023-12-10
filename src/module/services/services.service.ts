@@ -130,6 +130,19 @@ export class ServicesService {
     };
 
     const category = await this.modelServicesCategory.find(query);
+
+    // const result = [];
+    // category.map(async (cat) => {
+    //   const services = await this.modelServices.find({
+    //     servicesCategory: cat.categoryName,
+    //   });
+
+    //   const test = services.reduce((total, value) => {
+    //     return total + value.servicesCategory.length;
+    //   }, 0);
+    //   console.log(test);
+    // });
+
     return category;
   }
 
