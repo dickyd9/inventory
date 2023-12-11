@@ -29,7 +29,9 @@ export class ItemService {
   }
 
   async getAllItem(keyword: any, type: string): Promise<Item[]> {
-    const query: any = {};
+    const query: any = {
+      deletedAt: null,
+    };
 
     if (keyword) {
       const regex = new RegExp(keyword, 'i');
@@ -50,6 +52,18 @@ export class ItemService {
       .select('-_id -__v')
       .exec();
     return item;
+  }
+
+  async updateItemAmount(itemId: string, amount: number) {
+    const item = await this.itemModel.findById({ _id: itemId });
+    const result = await item.updateOne({
+      itemAmount: item.itemAmount + amount,
+    });
+
+    return {
+      message: 'Amount Updated',
+      result,
+    };
   }
 
   async updateItemStatus(itemCode: string) {

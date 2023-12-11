@@ -8,6 +8,7 @@ import { CreateExpenses } from './dto/create-expenses.dto';
 import { Expenses } from './entities/expense.entity';
 import { PaymentRelation } from '../transaction/entities/payment-relation';
 import { Customer } from '../customer/entities/customer.entity';
+import { ItemService } from '../item/item.service';
 
 @Injectable()
 export class ReportService {
@@ -19,6 +20,7 @@ export class ReportService {
     @InjectModel('Employee') private modelEmployee: Model<Employee>,
     @InjectModel('Customer') private modelCustomer: Model<Customer>,
     @InjectModel('Expenses') private modelExpenses: Model<Expenses>,
+    private readonly itemService: ItemService,
   ) {}
 
   async reportTransaction(report: any, month: any, year: any) {
@@ -237,7 +239,7 @@ export class ReportService {
       return {
         ...emp,
         employeeTaskUsed: employeeTaskUsed.length,
-        transaction: employeeTaskUsed
+        transaction: employeeTaskUsed,
       };
     });
 
@@ -273,6 +275,10 @@ export class ReportService {
   async addExpenses(createExpenses: CreateExpenses) {
     const expenses = new this.modelExpenses(createExpenses);
     const result = await expenses.save();
+    await this.itemService.updateItemAmount(
+      createExpenses.itemId,
+      createExpenses.amount,
+    );
     return { message: 'Success Add Data!', data: result };
   }
 

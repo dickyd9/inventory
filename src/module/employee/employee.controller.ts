@@ -57,7 +57,7 @@ export class EmployeeController {
     return this.employeeService.asignTask(itemCode, employee);
   }
 
-  @Put(':employeeId')
+  @Put('/:employeeId')
   update(
     @Param('employeeId') employeeId: string,
     @Body() updateEmployeeDto: UpdateEmployeeDto,
@@ -65,7 +65,7 @@ export class EmployeeController {
     return this.employeeService.update(employeeId, updateEmployeeDto);
   }
 
-  @Delete(':employeeId')
+  @Delete('/:employeeId')
   remove(@Param('employeeId') employeeId: string) {
     return this.employeeService.remove(employeeId);
   }

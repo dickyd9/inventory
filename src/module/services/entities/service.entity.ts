@@ -12,7 +12,7 @@ export class Services extends Document {
   @Prop({ type: Number })
   servicesPrice: number;
 
-  @Prop({ type: String, default: null })
+  @Prop({ type: String, default: null, index: true })
   servicesCategory: string;
 
   @Prop({ type: Number, default: null })
