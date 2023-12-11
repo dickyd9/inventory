@@ -7,7 +7,7 @@ import { Model } from 'mongoose';
 import { Customer } from './entities/customer.entity';
 import { Transaction } from '../transaction/entities/transaction.entity';
 import { Item } from '../item/entities/item.entity';
-import { Services } from '../services/entities/service.entity'
+import { Services } from '../services/entities/service.entity';
 
 @Injectable()
 export class CustomerService {
@@ -78,7 +78,9 @@ export class CustomerService {
         service: [],
       };
       for (const service of trx.service) {
-        const itm = await this.modelServices.findOne({ servicesCode: service.serviceCode });
+        const itm = await this.modelServices.findOne({
+          servicesCode: service.serviceCode,
+        });
         trxRef.service.push({
           serviceCode: itm.servicesCode,
           serviceName: itm.servicesName,
@@ -97,16 +99,25 @@ export class CustomerService {
     return res;
   }
 
-  async update(id: string, updateCustomerDto: UpdateCustomerDto) {
-    const customer = new this.customerModel(updateCustomerDto);
-    const result = await customer.updateOne();
-    return result;
+  async update(customerId: string, updateCustomerDto: UpdateCustomerDto) {
+    const result = await this.customerModel.findByIdAndUpdate(
+      { _id: customerId },
+      { updateCustomerDto },
+    );
+    return {
+      message: 'Item Updated!',
+      result,
+    };
   }
 
-  async remove(id: string) {
-    const deleted = await this.customerModel
-      .findByIdAndUpdate(id, { deletedAt: new Date() }, { new: true })
-      .exec();
-    return deleted;
+  async remove(customerId: string) {
+    const deleted = await this.customerModel.findByIdAndUpdate(
+      { _id: customerId },
+      { deletedAt: new Date() },
+    );
+    return {
+      message: 'Success delete Item',
+      count: 1,
+    };
   }
 }

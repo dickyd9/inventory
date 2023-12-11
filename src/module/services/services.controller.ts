@@ -80,21 +80,21 @@ export class ServicesController {
     return this.servicesService.getServicesCategory();
   }
 
-  @Put('category/:serviceCategoryCode')
+  @Put('category/:serviceCategoryId')
   async editServiceCategory(
-    @Param('serviceCategoryCode') serviceCategoryCode: any,
+    @Param('serviceCategoryId') serviceCategoryId: any,
     @Body() updateServiceCategoryDto: CreateServiceCategoryDto,
   ) {
     return this.servicesService.udateServicesCategory(
-      serviceCategoryCode,
+      serviceCategoryId,
       updateServiceCategoryDto,
     );
   }
 
-  @Delete('category/:serviceCategoryCode')
+  @Delete('category/:serviceCategoryId')
   async deleteServiceCategory(
-    @Param('serviceCategoryCode') serviceCategoryCode: any,
+    @Param('serviceCategoryId') serviceCategoryId: any,
   ) {
-    return this.servicesService.deleteServiceCategory(serviceCategoryCode);
+    return this.servicesService.deleteServiceCategory(serviceCategoryId);
   }
 }

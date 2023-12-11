@@ -129,45 +129,55 @@ export class ServicesService {
       deletedAt: null,
     };
 
-    const category = await this.modelServicesCategory.find(query);
+    const category = await this.modelServicesCategory.find(query).exec();
 
-    // const result = [];
-    // category.map(async (cat) => {
-    //   const services = await this.modelServices.find({
-    //     servicesCategory: cat.categoryName,
-    //   });
+    const result = [];
+    await Promise.all(
+      category.map(async (cat: any) => {
+        const services = await this.modelServices.find({
+          servicesCategory: cat.categoryName,
+        });
+        const serviceCategory = {
+          _id: cat._id,
+          categoryCode: cat.categoryCode,
+          categoryName: cat.categoryName,
+          totalService: services.length,
+        };
 
-    //   const test = services.reduce((total, value) => {
-    //     return total + value.servicesCategory.length;
-    //   }, 0);
-    //   console.log(test);
-    // });
+        result.push(serviceCategory);
+      }),
+    );
 
-    return category;
+    return result;
   }
 
   async udateServicesCategory(
-    servicesCategoryCode: any,
+    servicesCategoryId: any,
     createServiceCategoryDto: CreateServiceCategoryDto,
   ) {
     const servicesCategory = await this.modelServicesCategory.findOne({
-      categoryCode: servicesCategoryCode,
+      _id: servicesCategoryId,
     });
 
     const result = await servicesCategory.updateOne(createServiceCategoryDto);
     return {
-      status: 'Success updated services category',
+      message: 'Success updated services category',
       result,
     };
   }
 
   async deleteServiceCategory(servicesCategoryCodeId: any) {
     const serviceCategory = await this.modelServicesCategory.findOne({
-      categoryCode: servicesCategoryCodeId,
+      _id: servicesCategoryCodeId,
     });
 
-    await serviceCategory.updateOne({
+    const result = await serviceCategory.updateOne({
       deletedAt: new Date(),
     });
+
+    return {
+      message: 'Data Deleted!',
+      result,
+    };
   }
 }

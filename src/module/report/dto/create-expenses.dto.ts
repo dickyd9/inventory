@@ -6,7 +6,14 @@ export class CreateExpenses {
 
   @IsString()
   @IsOptional()
+  itemId: string;
+
+  @IsString()
+  @IsOptional()
   note: string;
+
+  @IsNumber()
+  amount: number;
 
   @IsNumber()
   price: number;

@@ -8,6 +8,7 @@ import {
   Delete,
   Query,
   UseInterceptors,
+  Put,
 } from '@nestjs/common';
 import { CustomerService } from './customer.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
@@ -39,16 +40,16 @@ export class CustomerController {
     return this.customerService.findOne(customerCode);
   }
 
-  @Patch(':id')
+  @Put(':customerId')
   update(
-    @Param('id') id: string,
+    @Param('customerId') customerId: string,
     @Body() updateCustomerDto: UpdateCustomerDto,
   ) {
-    return this.customerService.update(id, updateCustomerDto);
+    return this.customerService.update(customerId, updateCustomerDto);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.customerService.remove(id);
+  @Delete(':customerId')
+  remove(@Param('customerId') customerId: string) {
+    return this.customerService.remove(customerId);
   }
 }
