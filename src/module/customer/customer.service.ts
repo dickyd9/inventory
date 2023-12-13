@@ -8,11 +8,14 @@ import { Customer } from './entities/customer.entity';
 import { Transaction } from '../transaction/entities/transaction.entity';
 import { Item } from '../item/entities/item.entity';
 import { Services } from '../services/entities/service.entity';
+import { CustomerPoint } from './entities/customer.point.entity';
 
 @Injectable()
 export class CustomerService {
   constructor(
     @InjectModel('Customer') private customerModel: Model<Customer>,
+    @InjectModel('CustomerPoint')
+    private modelCustomerPoint: Model<CustomerPoint>,
     @InjectModel('Item') private modelItem: Model<Item>,
     @InjectModel('Services') private modelServices: Model<Services>,
     @InjectModel('Transaction')
@@ -41,9 +44,41 @@ export class CustomerService {
         {
           customerEmail: regexPattern,
         },
+        {
+          deletedAt: null
+        }
       ],
     });
-    return customer;
+
+    const customerCodes = customer.map((cust) => cust.customerCode);
+
+    const customerPoints = await this.modelCustomerPoint.aggregate([
+      {
+        $match: {
+          customerCode: { $in: customerCodes },
+        },
+      },
+      {
+        $group: {
+          _id: '$customerCode',
+          totalPoints: { $sum: '$points' },
+        },
+      },
+    ]);
+
+    const enrichedCustomers = customer.map((cust) => {
+      const points = customerPoints.find(
+        (point) => point._id === cust.customerCode,
+      );
+      const totalPoints = points ? points.totalPoints : 0;
+
+      return {
+        ...cust.toObject(),
+        totalPoints,
+      };
+    });
+
+    return enrichedCustomers;
   }
 
   async findOne(customerCode: string) {

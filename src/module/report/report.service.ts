@@ -222,6 +222,11 @@ export class ReportService {
 
     const employee = await this.modelEmployee.aggregate([
       {
+        $match: {
+          deletedAt: null,
+        },
+      },
+      {
         $project: {
           _id: 0,
           employeeCode: 1,
@@ -281,7 +286,7 @@ export class ReportService {
     );
     return { message: 'Success Add Data!', data: result };
   }
-
+  
   async getExpenses(month: any, year: any) {
     const query: any = {};
 
