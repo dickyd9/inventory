@@ -34,19 +34,23 @@ export class CustomerService {
   async findAll(keyword: any) {
     const regexPattern = new RegExp(keyword, 'i');
     const customer = await this.customerModel.find({
-      $or: [
+      $and: [
         {
-          customerName: regexPattern,
+          $or: [
+            {
+              customerName: regexPattern,
+            },
+            {
+              customerContact: regexPattern,
+            },
+            {
+              customerEmail: regexPattern,
+            },
+          ],
         },
         {
-          customerContact: regexPattern,
+          deletedAt: null,
         },
-        {
-          customerEmail: regexPattern,
-        },
-        {
-          deletedAt: null
-        }
       ],
     });
 
