@@ -76,7 +76,7 @@ export class ServicesService {
     return { message: 'Success add item', result };
   }
 
-  async getAllService(keyword: any) {
+  async getAllService(keyword: any, category: string) {
     const query: any = {
       deletedAt: null,
     };
@@ -84,6 +84,8 @@ export class ServicesService {
     if (keyword) {
       const regex = new RegExp(keyword, 'i');
       query.$or = [{ servicesName: regex }, { servicesCode: regex }];
+    } else if (category) {
+      query.servicesCategory = category;
     }
 
     const services = await this.modelServices.find(query);

@@ -27,10 +27,18 @@ export class Employee extends Document {
 
 export const EmployeeSchema = SchemaFactory.createForClass(Employee);
 
-EmployeeSchema.pre('save', function (next) {
-  const randomPart = Math.random().toString().slice(2, 6);
+EmployeeSchema.pre('save', async function (next) {
+  const jumlahData = await this.$model('Employee').countDocuments({
+    deletedAt: null,
+  });
+  const date = new Date();
+  const month = date.getUTCMonth() + 1; //months from 1-12
+  const day = date.getUTCDate();
+  const year = date.getUTCFullYear();
+  const dateString = `${day}${month}${year}`;
 
-  const basic = 'SL-' + randomPart;
+  const paddedNumber = (jumlahData + 1).toString().padStart(3, '0');
+  const basic = 'EM-' + paddedNumber + dateString;
 
   this.employeeCode = basic;
   next();

@@ -24,10 +24,20 @@ export class Item extends Document {
 
 export const ItemSchema = SchemaFactory.createForClass(Item);
 
-ItemSchema.pre('save', function (next) {
-  const randomPart = Math.random().toString().slice(2, 6);
+ItemSchema.pre('save', async function (next) {
+  const jumlahData = await this.$model('Item').countDocuments({
+    deletedAt: null,
+  });
+  const date = new Date();
+  const month = date.getUTCMonth() + 1;
+  const day = date.getUTCDate();
+  const year = date.getUTCFullYear();
+  const dateString = `${day}${month}${year}`;
 
-  this.itemCode = randomPart;
+  const paddedNumber = (jumlahData + 1).toString().padStart(3, '0');
+  const basic = 'ITM-' + paddedNumber + dateString;
+
+  this.itemCode = basic;
 
   next();
 });

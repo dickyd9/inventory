@@ -12,10 +12,20 @@ export class ItemCategory extends Document {
 
 export const ItemCategorySchema = SchemaFactory.createForClass(ItemCategory);
 
-ItemCategorySchema.pre('save', function (next) {
-  const randomPart = Math.random().toString().slice(2, 6);
+ItemCategorySchema.pre('save', async function (next) {
+  const jumlahData = await this.$model('Services').countDocuments({
+    deletedAt: null,
+  });
+  const date = new Date();
+  const month = date.getUTCMonth() + 1;
+  const day = date.getUTCDate();
+  const year = date.getUTCFullYear();
+  const dateString = `${day}${month}${year}`;
 
-  this.categoryCode = randomPart;
+  const paddedNumber = (jumlahData + 1).toString().padStart(3, '0');
+  const basic = 'ITM-' + paddedNumber + dateString;
+
+  this.categoryCode = basic;
 
   next();
 });

@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import mongoose, { Document } from 'mongoose';
+import { Document } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class Services extends Document {
@@ -34,10 +34,19 @@ export class Services extends Document {
 
 export const ServicesSchema = SchemaFactory.createForClass(Services);
 
-ServicesSchema.pre('save', function (next) {
-  const randomPart = Math.random().toString().slice(2, 6);
+ServicesSchema.pre('save', async function (next) {
+  const jumlahData = await this.$model('Services').countDocuments({
+    deletedAt: null,
+  });
+  const date = new Date();
+  const month = date.getUTCMonth() + 1;
+  const day = date.getUTCDate();
+  const year = date.getUTCFullYear();
+  const dateString = `${day}${month}${year}`;
 
-  this.servicesCode = randomPart;
+  const paddedNumber = (jumlahData + 1).toString().padStart(3, '0');
+  const basic = 'SE-' + paddedNumber + dateString;
+  this.servicesCode = basic;
 
   next();
 });

@@ -42,8 +42,18 @@ export class Transaction extends Document {
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);
 
 TransactionSchema.pre('save', async function (next) {
-  const randomPart = Math.random().toString().slice(2, 10);
+  const jumlahData = await this.$model('Services').countDocuments({
+    deletedAt: null,
+  });
+  const date = new Date();
+  const month = date.getUTCMonth() + 1;
+  const day = date.getUTCDate();
+  const year = date.getUTCFullYear();
+  const dateString = `${day}${month}${year}`;
 
-  this.paymentCode = randomPart;
+  const paddedNumber = (jumlahData + 1).toString().padStart(3, '0');
+  const basic = 'TRX-' + paddedNumber + dateString;
+
+  this.paymentCode = basic;
   next();
 });
