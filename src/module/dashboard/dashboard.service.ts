@@ -26,12 +26,13 @@ export class DashboardService {
   ) {}
 
   async generalReport() {
-    const items = await this.modelItem.find();
-    const services = await this.modelServices.find();
-    const customers = await this.modelCustomer.find();
-    const employees = await this.modelEmployee.find();
+    const items = await this.modelItem.find({ deletedAt: null });
+    const services = await this.modelServices.find({ deletedAt: null });
+    const customers = await this.modelCustomer.find({ deletedAt: null });
+    const employees = await this.modelEmployee.find({ deletedAt: null });
     const payments = await this.modelPayment.find({
       paymentStatus: 'PAID',
+      deletedAt: null,
     });
 
     const result = [
