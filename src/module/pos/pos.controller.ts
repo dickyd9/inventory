@@ -5,9 +5,9 @@ import { PosService } from './pos.service';
 export class PosController {
   constructor(private readonly posService: PosService) {}
 
-  @Get('menu/:categoryName')
+  @Get('menu')
   getMenu(
-    @Param('categoryName') categoryName: string,
+    @Query('categoryName') categoryName: string,
     @Query('keyword') keyword: any,
   ) {
     return this.posService.getMenu(categoryName, keyword);
@@ -21,5 +21,10 @@ export class PosController {
   @Get('employee-list')
   getEmployee() {
     return this.posService.getEmployee();
+  }
+
+  @Get('services-category')
+  getServicesCategory() {
+    return this.posService.getCategory();
   }
 }
