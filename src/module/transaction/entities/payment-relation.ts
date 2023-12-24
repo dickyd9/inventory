@@ -45,7 +45,7 @@ export const PaymentRelationSchema =
   SchemaFactory.createForClass(PaymentRelation);
 
 PaymentRelationSchema.pre('save', async function (next) {
-  const jumlahData = await this.$model('Services').countDocuments({
+  const jumlahData = await this.$model('PaymentRelation').countDocuments({
     deletedAt: null,
   });
   const date = new Date();

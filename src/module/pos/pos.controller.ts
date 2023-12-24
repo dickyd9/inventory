@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { PosService } from './pos.service';
 
 @Controller('pos')
@@ -14,17 +14,22 @@ export class PosController {
   }
 
   @Get('customer-list')
-  getCustomer() {
-    return this.posService.getCustomer();
+  getCustomer(@Query('keyword') keyword: string) {
+    return this.posService.getCustomer(keyword);
   }
 
   @Get('employee-list')
-  getEmployee() {
-    return this.posService.getEmployee();
+  getEmployee(@Query('keyword') keyword: string) {
+    return this.posService.getEmployee(keyword);
   }
 
   @Get('services-category')
   getServicesCategory() {
     return this.posService.getCategory();
+  }
+
+  @Get('last-trx')
+  getLastTransaction() {
+    return this.posService.getLastTransaction();
   }
 }

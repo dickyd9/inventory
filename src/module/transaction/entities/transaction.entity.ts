@@ -42,7 +42,7 @@ export class Transaction extends Document {
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);
 
 TransactionSchema.pre('save', async function (next) {
-  const jumlahData = await this.$model('Services').countDocuments({
+  const jumlahData = await this.$model('Transaction').countDocuments({
     deletedAt: null,
   });
   const date = new Date();
