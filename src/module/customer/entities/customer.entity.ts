@@ -30,12 +30,18 @@ export class Customer extends Document {
 
 export const CustomerSchema = SchemaFactory.createForClass(Customer);
 
-CustomerSchema.pre('save', function (next) {
-  const randomPart = Math.random().toString().slice(2, 6);
-  const currentDate = new Date();
-  const dateString = currentDate.toISOString().slice(0, 10).replace(/-/g, '');
+CustomerSchema.pre('save', async function (next) {
+  const jumlahData = await this.$model('Customer').countDocuments({
+    deletedAt: null,
+  });
+  const date = new Date();
+  const month = date.getUTCMonth() + 1;
+  const day = date.getUTCDate();
+  const year = date.getUTCFullYear();
+  const dateString = `${day}${month}${year}`;
 
-  const basic = dateString + randomPart;
+  const paddedNumber = (jumlahData + 1).toString().padStart(3, '0');
+  const basic = 'CUS-' + paddedNumber + dateString;
 
   this.customerCode = basic;
   next();

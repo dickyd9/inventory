@@ -60,7 +60,7 @@ export class TransactionController {
     @Body()
     items: {
       data: {
-        itemCode: string;
+        serviceCode: string;
         amount: number;
         employeeCode: string;
       }[];
