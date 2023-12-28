@@ -84,9 +84,7 @@ export class PosService {
       .find({
         createdAt: { $gte: startOfDay, $lte: endOfDay },
       })
-      .limit(3);
-
-    // console.log(trx)
+      // .limit(5);
 
     const result = [];
     await Promise.all(
@@ -97,8 +95,6 @@ export class PosService {
         const customer = await this.modelCustomer.findOne({
           customerCode: e.customerCode,
         });
-
-        console.log(payment)
 
         const services = [];
         if (Array.isArray(e.service)) {
@@ -141,8 +137,6 @@ export class PosService {
         }
       }),
     );
-
-    console.log(result)
 
     const sortDate = result.sort((a, b) => b.paymentDate - a.paymentDate);
     return sortDate;

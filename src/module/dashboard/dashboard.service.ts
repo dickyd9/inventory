@@ -91,8 +91,9 @@ export class DashboardService {
         }
       }),
     );
-
-    return best;
+    
+    const result = best.filter((b) => b.employeeTaskHandle != 0)
+    return result;
   }
 
   async lastTransaction() {

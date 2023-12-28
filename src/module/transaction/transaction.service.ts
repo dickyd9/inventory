@@ -230,6 +230,23 @@ export class TransactionService {
         }
       }
 
+      transaction.service.forEach(async (trx: any) => {
+        const taskemployee = new this.modelEmployeeTaskReport({
+          employeeCode: trx.employeeCode,
+          transactionRef: payments?.invoiceCode,
+          serviceCode: trx.serviceCode,
+        });
+
+        const customerPoint = new this.modelCustomerPoint({
+          customerCode: transaction.customerCode,
+          transactionRef: payments?.invoiceCode,
+          pointAmount: transaction?.totalPoint,
+        });
+
+        await taskemployee.save();
+        await customerPoint.save();
+      });
+
       const data = {
         invoice: payments?.invoiceCode,
         paymentCode: paymentCode,
@@ -468,9 +485,7 @@ export class TransactionService {
       paymentCode: paymentCode,
     });
     try {
-      storageFile = await this.storageService.get(
-        'dev/' + payment.receiptPath,
-      );
+      storageFile = await this.storageService.get('dev/' + payment.receiptPath);
     } catch (e) {
       if (e.message.toString().includes('No such object')) {
         throw new NotFoundException('image not found');

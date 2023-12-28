@@ -9,6 +9,7 @@ import { Expenses } from './entities/expense.entity';
 import { PaymentRelation } from '../transaction/entities/payment-relation';
 import { Customer } from '../customer/entities/customer.entity';
 import { ItemService } from '../item/item.service';
+import { EmployeeTask } from '../employee/entities/employee.task'
 
 @Injectable()
 export class ReportService {
@@ -18,6 +19,7 @@ export class ReportService {
     @InjectModel('PaymentRelation')
     private modelPayment: Model<PaymentRelation>,
     @InjectModel('Employee') private modelEmployee: Model<Employee>,
+    @InjectModel('EmployeeTask') private modelEmployeeTask: Model<EmployeeTask>,
     @InjectModel('Customer') private modelCustomer: Model<Customer>,
     @InjectModel('Expenses') private modelExpenses: Model<Expenses>,
     private readonly itemService: ItemService,
@@ -183,7 +185,7 @@ export class ReportService {
       throw new HttpException('Data tidak ditemukan', HttpStatus.NOT_FOUND);
     }
 
-    const result = await this.modelTransaction.aggregate([
+    const result = await this.modelEmployeeTask.aggregate([
       {
         $match: query,
       },
@@ -286,7 +288,7 @@ export class ReportService {
     );
     return { message: 'Success Add Data!', data: result };
   }
-  
+
   async getExpenses(month: any, year: any) {
     const query: any = {};
 
