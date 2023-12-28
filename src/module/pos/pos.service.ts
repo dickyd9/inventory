@@ -84,7 +84,7 @@ export class PosService {
       .find({
         createdAt: { $gte: startOfDay, $lte: endOfDay },
       })
-      .limit(3);
+      // .limit(5);
 
     const result = [];
     await Promise.all(
