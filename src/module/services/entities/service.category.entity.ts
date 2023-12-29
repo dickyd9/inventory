@@ -6,7 +6,7 @@ export class ServicesCategory extends Document {
   @Prop({ type: String, index: true })
   categoryCode: string;
 
-  @Prop({ type: String, index: true })
+  @Prop({ type: String, unique: true })
   categoryName: string;
 
   @Prop({ type: Date, default: null })

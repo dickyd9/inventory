@@ -10,6 +10,7 @@ import { PaymentRelation } from '../transaction/entities/payment-relation';
 import { Customer } from '../customer/entities/customer.entity';
 import { ItemService } from '../item/item.service';
 import { EmployeeTask } from '../employee/entities/employee.task'
+import { EmployeeTaskReport } from '../employee/entities/employee.task.report'
 
 @Injectable()
 export class ReportService {
@@ -20,6 +21,7 @@ export class ReportService {
     private modelPayment: Model<PaymentRelation>,
     @InjectModel('Employee') private modelEmployee: Model<Employee>,
     @InjectModel('EmployeeTask') private modelEmployeeTask: Model<EmployeeTask>,
+    @InjectModel('EmployeeTaskReport') private modelEmployeeTaskReport: Model<EmployeeTaskReport>,
     @InjectModel('Customer') private modelCustomer: Model<Customer>,
     @InjectModel('Expenses') private modelExpenses: Model<Expenses>,
     private readonly itemService: ItemService,
@@ -185,42 +187,45 @@ export class ReportService {
       throw new HttpException('Data tidak ditemukan', HttpStatus.NOT_FOUND);
     }
 
-    const result = await this.modelEmployeeTask.aggregate([
-      {
-        $match: query,
-      },
-      { $unwind: '$item' },
-      {
-        $group: {
-          _id: '$item.itemCode',
-          employeeCode: { $first: '$item.employeeCode' },
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          itemCode: '$_id',
-          employeeCode: 1,
-        },
-      },
-    ]);
+    // const result = await this.modelEmployeeTaskReport.aggregate([
+    //   {
+    //     $match: query,
+    //   },
+    //   { $unwind: '$services' },
+    //   {
+    //     $group: {
+    //       _id: '$services.serviceCode',
+    //       employeeCode: { $first: '$services.employeeCode' },
+    //     },
+    //   },
+    //   {
+    //     $project: {
+    //       _id: 0,
+    //       serviceCode: '$_id',
+    //       employeeCode: 1,
+    //     },
+    //   },
+    // ]);
+
+
+    const result = await this.modelEmployeeTaskReport.find()
 
     // Membuat lookup ke koleksi item untuk mengambil itemName dan itemPrice
-    const summaryWithDetails = await this.modelItem.aggregate([
-      {
-        $match: {
-          itemCode: { $in: result.map((item) => item.itemCode) },
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          itemCode: 1,
-          itemName: 1,
-          itemPrice: 1,
-        },
-      },
-    ]);
+    // const summaryWithDetails = await this.modelItem.aggregate([
+    //   {
+    //     $match: {
+    //       itemCode: { $in: result.map((item) => item.itemCode) },
+    //     },
+    //   },
+    //   {
+    //     $project: {
+    //       _id: 0,
+    //       itemCode: 1,
+    //       itemName: 1,
+    //       itemPrice: 1,
+    //     },
+    //   },
+    // ]);
 
     const employee = await this.modelEmployee.aggregate([
       {

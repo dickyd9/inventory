@@ -120,10 +120,15 @@ export class ServicesService {
   async createServicesCategory(
     createServiceCategoryDto: CreateServiceCategoryDto,
   ) {
-    const category = new this.modelServicesCategory(createServiceCategoryDto);
+    try {
+      const categoryName = createServiceCategoryDto.categoryName.toLowerCase();
+      const category = new this.modelServicesCategory({ categoryName });
 
-    const result = await category.save();
-    return { message: 'Category Created!', result };
+      const result = await category.save();
+
+      return { message: 'Category Created!', result };
+    } catch (error) {}
+    return { message: 'Data Duplicate!' };
   }
 
   async getServicesCategory() {

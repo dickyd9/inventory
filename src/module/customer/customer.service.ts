@@ -34,38 +34,39 @@ export class CustomerService {
   async findAll(keyword: any) {
     const regexPattern = new RegExp(keyword, 'i');
     const customer = await this.customerModel.find({
-      $and: [
-        {
-          $or: [
-            {
-              customerName: regexPattern,
-            },
-            {
-              customerContact: regexPattern,
-            },
-            {
-              customerEmail: regexPattern,
-            },
-          ],
-        },
-        {
-          deletedAt: null,
-        },
-      ],
+      // $and: [
+      //   {
+      //     $or: [
+      //       {
+      //         customerName: regexPattern,
+      //       },
+      //       {
+      //         customerContact: regexPattern,
+      //       },
+      //       {
+      //         customerEmail: regexPattern,
+      //       },
+      //     ],
+      //   },
+      //   {
+      //     deletedAt: null,
+      //   },
+      // ],
+      deletedAt: null,
     });
 
-    const customerCodes = customer.map((cust) => cust.customerCode);
+    const customerCode = customer.map((cust) => cust.customerCode);
 
     const customerPoints = await this.modelCustomerPoint.aggregate([
       {
         $match: {
-          customerCode: { $in: customerCodes },
+          customerCode: { $in: customerCode },
         },
       },
       {
         $group: {
           _id: '$customerCode',
-          totalPoints: { $sum: '$points' },
+          totalPoints: { $sum: { $toInt: '$pointAmount' } },
         },
       },
     ]);
