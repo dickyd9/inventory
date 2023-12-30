@@ -17,6 +17,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { Public } from 'src/config/database/meta';
 import { StorageService } from 'src/common/storage/storage.service';
+import { CreateBookingDto } from './dto/create-transaction.dto';
 
 @Controller('transaction')
 export class TransactionController {
@@ -69,17 +70,6 @@ export class TransactionController {
     return this.transactionService.addItem(paymentCode, items);
   }
 
-  // @Patch('updatePaymentMethod')
-  // updatePaymentMethod(
-  //   @Body()
-  //   payment: {
-  //     paymentCode: string;
-  //     paymentMethod: string;
-  //   },
-  // ) {
-  //   return this.transactionService.updatePaymentMethod(payment);
-  // }
-
   @Patch('updatePaymentStatus/:paymentCode')
   updatePaymentStatus(
     @Param('paymentCode')
@@ -119,5 +109,10 @@ export class TransactionController {
     year: any,
   ) {
     return this.transactionService.findAll(day, month, year);
+  }
+
+  @Post('booking')
+  bookingTransaction(@Body() createBookingDto: CreateBookingDto) {
+    return this.transactionService.bookingTrx(createBookingDto);
   }
 }

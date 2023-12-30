@@ -17,6 +17,7 @@ import { Customer } from '../customer/entities/customer.entity';
 import { StorageService } from 'src/common/storage/storage.service';
 import { StorageFile } from 'src/common/storage/storage.file';
 import { Services } from '../services/entities/service.entity';
+import { CreateBookingDto } from './dto/create-transaction.dto';
 
 @Injectable()
 export class TransactionService {
@@ -140,34 +141,6 @@ export class TransactionService {
       };
     }
   }
-
-  // async updatePaymentMethod(payments: any) {
-  //   const { paymentCode, paymentMethod } = payments;
-  //   try {
-  //     const trx = await this.modelTransaction.findOne({
-  //       paymentCode: paymentCode,
-  //     });
-  //     if (paymentMethod === 'CASH') {
-  //       const body = {
-  //         paymentCode: paymentCode,
-  //         paymentMethod: paymentMethod,
-  //         paymentStatus: 'SELECTING_PAYMENT',
-  //       };
-  //       const payment = new this.modelPayment(body);
-  //       const result = await payment.save();
-  //       return result;
-  //     } else {
-  //       const body = {
-  //         paymentCode: paymentCode,
-  //         paymentMethod: paymentMethod,
-  //         paymentStatus: 'SELECTING_PAYMENT',
-  //       };
-  //       const payment = new this.modelPayment(body);
-  //       const result = await payment.save();
-  //       return result;
-  //     }
-  //   } catch (error) {}
-  // }
 
   async updatePaymentStatus(paymentCode: string, payment: any) {
     const { paymentMethod, paymentPrice } = payment;
@@ -504,5 +477,13 @@ export class TransactionService {
     );
     res.setHeader('Cache-Control', 'max-age=60d');
     res.end(storageFile.buffer);
+  }
+
+  // Booking Transaction
+  async bookingTrx(createBookingDto: CreateBookingDto) {
+    console.log(createBookingDto)
+    return {
+      message: 'Booking',
+    };
   }
 }
