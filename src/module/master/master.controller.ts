@@ -8,4 +8,9 @@ export class MasterController {
   getAllData() {
     return this.masterService.getAllService();
   }
+
+  @Get('/item')
+  getallItem() {
+    return this.masterService.getAllItem();
+  }
 }

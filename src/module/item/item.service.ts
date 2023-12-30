@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateItemDto } from './dto/create-item.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
 import { InjectModel } from '@nestjs/mongoose';
@@ -54,16 +54,19 @@ export class ItemService {
     return item;
   }
 
-  async updateItemAmount(itemId: string, amount: number) {
-    const item = await this.itemModel.findById({ _id: itemId });
-    const result = await item.updateOne({
-      itemAmount: item.itemAmount + amount,
-    });
-
-    return {
-      message: 'Amount Updated',
-      result,
-    };
+  async updateItemAmount(itemCode: string, amount: number) {
+    try {
+      const item = await this.itemModel.findOne({ itemCode: itemCode });
+      const result = await item.updateOne({
+        itemAmount: item.itemAmount + amount,
+      });
+      return {
+        message: 'Amount Updated',
+        result,
+      };
+    } catch (error) {
+      throw new HttpException('Data tidak ditemukan', HttpStatus.NOT_FOUND);
+    }
   }
 
   async updateItemStatus(itemCode: string) {

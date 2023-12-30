@@ -9,19 +9,22 @@ import { Expenses } from './entities/expense.entity';
 import { PaymentRelation } from '../transaction/entities/payment-relation';
 import { Customer } from '../customer/entities/customer.entity';
 import { ItemService } from '../item/item.service';
-import { EmployeeTask } from '../employee/entities/employee.task'
-import { EmployeeTaskReport } from '../employee/entities/employee.task.report'
+import { EmployeeTask } from '../employee/entities/employee.task';
+import { EmployeeTaskReport } from '../employee/entities/employee.task.report';
+import { Services } from '../services/entities/service.entity'
 
 @Injectable()
 export class ReportService {
   constructor(
     @InjectModel('Item') private modelItem: Model<Item>,
+    @InjectModel('Services') private modelServices: Model<Services>,
     @InjectModel('Transaction') private modelTransaction: Model<Transaction>,
     @InjectModel('PaymentRelation')
     private modelPayment: Model<PaymentRelation>,
     @InjectModel('Employee') private modelEmployee: Model<Employee>,
     @InjectModel('EmployeeTask') private modelEmployeeTask: Model<EmployeeTask>,
-    @InjectModel('EmployeeTaskReport') private modelEmployeeTaskReport: Model<EmployeeTaskReport>,
+    @InjectModel('EmployeeTaskReport')
+    private modelEmployeeTaskReport: Model<EmployeeTaskReport>,
     @InjectModel('Customer') private modelCustomer: Model<Customer>,
     @InjectModel('Expenses') private modelExpenses: Model<Expenses>,
     private readonly itemService: ItemService,
@@ -127,18 +130,18 @@ export class ReportService {
     ]);
 
     // Membuat lookup ke koleksi item untuk mengambil itemName dan itemPrice
-    const summaryWithDetails = await this.modelItem.aggregate([
+    const summaryWithDetails = await this.modelServices.aggregate([
       {
         $match: {
-          itemCode: { $in: result.map((item) => item.itemCode) },
+          servicesCode: { $in: result.map((services) => services.servicesCode) },
         },
       },
       {
         $project: {
           _id: 0,
-          itemCode: 1,
-          itemName: 1,
-          itemPrice: 1,
+          servicesCode: 1,
+          servicesName: 1,
+          servicesPrice: 1,
         },
       },
     ]);
@@ -207,8 +210,7 @@ export class ReportService {
     //   },
     // ]);
 
-
-    const result = await this.modelEmployeeTaskReport.find()
+    const result = await this.modelEmployeeTaskReport.find();
 
     // Membuat lookup ke koleksi item untuk mengambil itemName dan itemPrice
     // const summaryWithDetails = await this.modelItem.aggregate([
@@ -287,10 +289,17 @@ export class ReportService {
   async addExpenses(createExpenses: CreateExpenses) {
     const expenses = new this.modelExpenses(createExpenses);
     const result = await expenses.save();
-    await this.itemService.updateItemAmount(
-      createExpenses.itemId,
-      createExpenses.amount,
-    );
+    if (createExpenses.itemCode) {
+      try {
+        await this.itemService.updateItemAmount(
+          createExpenses.itemCode,
+          createExpenses.amount,
+        );
+      } catch (error) {
+        throw new HttpException('Item tidak ditemukan', HttpStatus.NOT_FOUND);
+      }
+    }
+
     return { message: 'Success Add Data!', data: result };
   }
 
@@ -303,9 +312,23 @@ export class ReportService {
       query.createdAt = { $gte: awalBulan, $lte: akhirBulan };
     }
 
+    const result = []
     const expenses = await this.modelExpenses.find(query);
+    await Promise.all(
+      expenses.map(async (ex) => {
+        const item = await this.modelItem.findOne({itemCode: ex.itemCode})
+        result.push({
+          itemOrDesc: item?.itemName || ex.description,
+          amount: ex.amount,
+          paymentMethod: ex.paymentMethod,
+          price: ex.price,
+          note: ex.note,
+          createdAt: ex.createdAt
+        })
+      })
+    );
 
-    return expenses;
+    return result;
   }
 
   async getReport(startDate: any, endDate: any, month: any, year: any) {

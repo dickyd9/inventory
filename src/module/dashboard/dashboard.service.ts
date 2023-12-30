@@ -99,7 +99,7 @@ export class DashboardService {
   async lastTransaction() {
     const trx = await this.modelTransaction
       .find()
-      .sort({ createdAt: 1 })
+      .sort({ createdAt: -1 })
       .limit(5)
       .select(
         'paymentCode customerCode createdAt totalPrice totalAmount totalPoint',
