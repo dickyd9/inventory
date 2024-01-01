@@ -61,26 +61,28 @@ export class TransactionService {
   // Transaction Proccess
 
   async createOrder(userId: string, userCode: any) {
-    const { customerCode } = userCode;
-    const ticketTransaction = {
-      customerCode,
-      userId,
-    };
+    try {
+      const { customerCode } = userCode;
+      const ticketTransaction = {
+        customerCode,
+        userId,
+      };
 
-    const customer = await this.modelCustomer.findOne({
-      customerCode: customerCode,
-    });
+      const customer = await this.modelCustomer.findOne({
+        customerCode: customerCode,
+      });
 
-    const trx = new this.modelTransaction(ticketTransaction);
-    const result = await trx.save();
+      const trx = new this.modelTransaction(ticketTransaction);
+      const result = await trx.save();
 
-    return {
-      status: HttpStatus.CREATED,
-      message: 'Transaction Added',
-      paymentCode: result.paymentCode,
-      customerName: customer.customerName,
-      trasactionDate: result.createdAt,
-    };
+      return {
+        status: HttpStatus.CREATED,
+        message: 'Transaction Added',
+        paymentCode: result.paymentCode,
+        customerName: customer.customerName,
+        trasactionDate: result.createdAt,
+      };
+    } catch (error) {}
   }
 
   async addItem(paymentCode: any, services: any) {

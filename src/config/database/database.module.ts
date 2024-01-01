@@ -8,7 +8,7 @@ import { MongooseModule } from '@nestjs/mongoose';
       imports: [ConfigModule], // Mengimpor ConfigModule di MongooseModule
       useFactory: async (configService: ConfigService) => ({
         uri: configService.get('DB_URI'), // Mengambil nilai URI dari konfigurasi .env
-        dbName: 'nova-beaty-salon-db',
+        dbName: configService.get('DB_NAME'),
       }),
       inject: [ConfigService], // Menginjeksi ConfigService
     }),
