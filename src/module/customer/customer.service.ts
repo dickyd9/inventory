@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 
@@ -22,13 +22,17 @@ export class CustomerService {
     private modelTransaction: Model<Transaction>,
   ) {}
   async createCustomer(createCustomerDto: CreateCustomerDto) {
-    const customer = new this.customerModel(createCustomerDto);
-    const result = await customer.save();
-    return {
-      status: HttpStatus.CREATED,
-      message: 'Customer added',
-      detail: result,
-    };
+    try {
+      const customer = new this.customerModel(createCustomerDto);
+      const result = await customer.save();
+      return {
+        status: HttpStatus.CREATED,
+        message: 'Customer added',
+        detail: result,
+      };
+    } catch (error) {
+      throw new HttpException(error, HttpStatus.BAD_REQUEST);
+    }
   }
 
   async findAll(keyword: any) {
