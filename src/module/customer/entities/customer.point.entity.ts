@@ -9,6 +9,9 @@ export class CustomerPoint extends Document {
   @Prop({ type: String, index: true })
   transactionRef: string;
 
+  @Prop({ type: String, default: null })
+  spendTransaction: string;
+
   @Prop({ type: String })
   pointAmount: string;
 
