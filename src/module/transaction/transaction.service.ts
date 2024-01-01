@@ -204,15 +204,20 @@ export class TransactionService {
       }
 
       transaction.service.forEach(async (trx: any) => {
+        const service = await this.modelServices.findOne({
+          servicesCode: trx.serviceCode,
+        });
         const taskemployee = new this.modelEmployeeTaskReport({
           employeeCode: trx.employeeCode,
-          transactionRef: payments?.invoiceCode,
+          transactionRef: trx?.invoiceCode,
+          incomeEarn: service?.servicesPrice,
           serviceCode: trx.serviceCode,
         });
 
         const customerPoint = new this.modelCustomerPoint({
           customerCode: transaction.customerCode,
           transactionRef: payments?.invoiceCode,
+          spendTransaction: transaction?.totalPrice,
           pointAmount: transaction?.totalPoint,
         });
 
@@ -481,7 +486,7 @@ export class TransactionService {
 
   // Booking Transaction
   async bookingTrx(createBookingDto: CreateBookingDto) {
-    console.log(createBookingDto)
+    console.log(createBookingDto);
     return {
       message: 'Booking',
     };

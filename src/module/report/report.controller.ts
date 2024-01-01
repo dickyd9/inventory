@@ -1,7 +1,9 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  Param,
   Post,
   Query,
   UseInterceptors,
@@ -75,6 +77,11 @@ export class ReportController {
     year: any,
   ) {
     return this.reportService.getExpenses(month, year);
+  }
+
+  @Delete('expenses/:expensesId')
+  deletedExpenses(@Param('expensesId') expensesId: string) {
+    return this.reportService.deleteExpenses(expensesId);
   }
 
   @Get('info')

@@ -11,7 +11,7 @@ import { Customer } from '../customer/entities/customer.entity';
 import { ItemService } from '../item/item.service';
 import { EmployeeTask } from '../employee/entities/employee.task';
 import { EmployeeTaskReport } from '../employee/entities/employee.task.report';
-import { Services } from '../services/entities/service.entity'
+import { Services } from '../services/entities/service.entity';
 
 @Injectable()
 export class ReportService {
@@ -31,7 +31,17 @@ export class ReportService {
   ) {}
 
   async reportTransaction(report: any, month: any, year: any) {
-    const trx = await this.modelTransaction.find();
+    const query: any = {};
+
+    if (month && year) {
+      const awalBulan = new Date(year, month - 1, 1);
+      const akhirBulan = new Date(year, month, 0, 23, 59, 59, 999);
+      query.createdAt = { $gte: awalBulan, $lte: akhirBulan };
+    } else {
+      throw new HttpException('Data tidak ditemukan', HttpStatus.NOT_FOUND);
+    }
+
+    const trx = await this.modelTransaction.find(query);
 
     const result = [];
     await Promise.all(
@@ -109,20 +119,20 @@ export class ReportService {
       {
         $match: query,
       },
-      { $unwind: '$item' },
+      { $unwind: '$service' },
       {
         $group: {
-          _id: '$item.itemCode',
-          itemName: { $first: '$item.itemName' },
-          amountUsed: { $sum: '$item.amount' },
-          pointUsed: { $sum: '$item.itemPoint' },
+          _id: '$service.serviceCode',
+          serviceName: { $first: '$service.servicesName' },
+          amountUsed: { $sum: '$service.amount' },
+          pointUsed: { $sum: '$service.servicesPoint' },
         },
       },
       {
         $project: {
           _id: 0,
-          itemCode: '$_id',
-          itemName: 1,
+          serviceCode: '$_id',
+          serviceName: 1,
           amountUsed: 1,
           pointUsed: 1,
         },
@@ -133,7 +143,9 @@ export class ReportService {
     const summaryWithDetails = await this.modelServices.aggregate([
       {
         $match: {
-          servicesCode: { $in: result.map((services) => services.servicesCode) },
+          servicesCode: {
+            $in: result.map((services) => services.serviceCode),
+          },
         },
       },
       {
@@ -146,15 +158,14 @@ export class ReportService {
       },
     ]);
 
-    // Menggabungkan hasil lookup dengan hasil sebelumnya
     const finalResult = result.map((item) => {
       const itemDetails = summaryWithDetails.find(
-        (detail) => detail.itemCode === item.itemCode,
+        (detail) => detail.servicesCode === item.serviceCode,
       );
       return {
         ...item,
-        itemName: itemDetails?.itemName || null,
-        totalPrice: item.amountUsed * itemDetails?.itemPrice,
+        serviceName: itemDetails?.servicesName || null,
+        totalPrice: item.amountUsed * itemDetails?.servicesPrice,
       };
     });
 
@@ -190,100 +201,42 @@ export class ReportService {
       throw new HttpException('Data tidak ditemukan', HttpStatus.NOT_FOUND);
     }
 
-    // const result = await this.modelEmployeeTaskReport.aggregate([
-    //   {
-    //     $match: query,
-    //   },
-    //   { $unwind: '$services' },
-    //   {
-    //     $group: {
-    //       _id: '$services.serviceCode',
-    //       employeeCode: { $first: '$services.employeeCode' },
-    //     },
-    //   },
-    //   {
-    //     $project: {
-    //       _id: 0,
-    //       serviceCode: '$_id',
-    //       employeeCode: 1,
-    //     },
-    //   },
-    // ]);
-
-    const result = await this.modelEmployeeTaskReport.find();
-
-    // Membuat lookup ke koleksi item untuk mengambil itemName dan itemPrice
-    // const summaryWithDetails = await this.modelItem.aggregate([
-    //   {
-    //     $match: {
-    //       itemCode: { $in: result.map((item) => item.itemCode) },
-    //     },
-    //   },
-    //   {
-    //     $project: {
-    //       _id: 0,
-    //       itemCode: 1,
-    //       itemName: 1,
-    //       itemPrice: 1,
-    //     },
-    //   },
-    // ]);
-
-    const employee = await this.modelEmployee.aggregate([
+    // const result = await this.modelEmployeeTaskReport.find(query);
+    const result = await this.modelEmployeeTaskReport.aggregate([
       {
-        $match: {
-          deletedAt: null,
+        $match: query,
+      },
+      {
+        $group: {
+          _id: '$employeeCode',
+          employeeCode: { $first: '$employeeCode' },
+          employeeTaskUsed: { $sum: 1 },
+          incomeEarn: { $sum: '$incomeEarn' },
         },
+      },
+      {
+        $lookup: {
+          from: 'employees', // Nama koleksi Employee
+          localField: '_id', // Field dari modelEmployeeTaskReport (employeeId)
+          foreignField: 'employeeCode', // Field dari koleksi Employee
+          as: 'employeeData', // Nama field untuk hasil join
+        },
+      },
+      {
+        $unwind: '$employeeData', // Mengurai array hasil join
       },
       {
         $project: {
           _id: 0,
-          employeeCode: 1,
-          employeeName: 1,
+          employeeName: '$employeeData.employeeName',
+          employeeCode: '$employeeData.employeeCode',
+          employeeTaskUsed: 1,
+          incomeEarn: 1,
         },
       },
     ]);
 
-    const finalEmployee = employee.map((emp) => {
-      const itemsInTrx = result.find(
-        (trx) => trx.employeeCode === emp.employeeCode,
-      );
-
-      const employeeTaskUsed = itemsInTrx ? [itemsInTrx] : [];
-      return {
-        ...emp,
-        employeeTaskUsed: employeeTaskUsed.length,
-        transaction: employeeTaskUsed,
-      };
-    });
-
-    // Menggabungkan hasil lookup dengan hasil sebelumnya
-    // const finalResult = result.map((item) => {
-    //   const itemDetails = summaryWithDetails.find(
-    //     (detail) => detail.itemCode === item.itemCode,
-    //   );
-
-    //   return {
-    //     ...item,
-    //     itemName: itemDetails?.itemName || null,
-    //     totalPrice: item.amountUsed * itemDetails?.itemPrice,
-    //   };
-    // });
-
-    // const direction =
-    //   sortDirection === 'asc' ? 1 : sortDirection === 'desc' ? -1 : 0;
-
-    // finalResult.sort((a, b) => {
-    //   if (a[sortColumn] < b[sortColumn]) {
-    //     return -1 * direction;
-    //   }
-    //   if (a[sortColumn] > b[sortColumn]) {
-    //     return 1 * direction;
-    //   }
-    //   return 0;
-    // });
-
-    return finalEmployee;
+    return result;
   }
 
   async addExpenses(createExpenses: CreateExpenses) {
@@ -312,23 +265,34 @@ export class ReportService {
       query.createdAt = { $gte: awalBulan, $lte: akhirBulan };
     }
 
-    const result = []
+    const result = [];
     const expenses = await this.modelExpenses.find(query);
     await Promise.all(
       expenses.map(async (ex) => {
-        const item = await this.modelItem.findOne({itemCode: ex.itemCode})
+        const item = await this.modelItem.findOne({ itemCode: ex.itemCode });
         result.push({
           itemOrDesc: item?.itemName || ex.description,
           amount: ex.amount,
           paymentMethod: ex.paymentMethod,
           price: ex.price,
           note: ex.note,
-          createdAt: ex.createdAt
-        })
-      })
+          createdAt: ex.createdAt,
+        });
+      }),
     );
 
     return result;
+  }
+
+  async deleteExpenses(expensesId: string) {
+    const expenses = await this.modelExpenses.findByIdAndDelete({
+      _id: expensesId,
+    });
+
+    return {
+      message: 'Delete Success!',
+      expenses,
+    };
   }
 
   async getReport(startDate: any, endDate: any, month: any, year: any) {

@@ -15,7 +15,7 @@ export class Services extends Document {
   @Prop({ type: String, default: null, index: true })
   servicesCategory: string;
 
-  @Prop({ type: Number, default: null })
+  @Prop({ type: Number, default: 0 })
   servicesPoint: number;
 
   @Prop({ type: String, ennum: ['active', 'inactive'], default: 'active' })
