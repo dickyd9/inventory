@@ -31,7 +31,7 @@ export class Customer extends Document {
 export const CustomerSchema = SchemaFactory.createForClass(Customer);
 
 CustomerSchema.pre('save', async function (next) {
-  const jumlahData = await this.$model('Customer').countDocuments({
+  const jumlahData = await this.$model('Customers').countDocuments({
     deletedAt: null,
   });
   const date = new Date();
