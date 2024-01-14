@@ -13,7 +13,10 @@ export class EmployeeTaskReport extends Document {
   incomeEarn: number;
 
   @Prop({ type: String })
-  serviceCode: string;
+  itemCode: string;
+
+  @Prop({ type: Date })
+  deletedAt: Date;
 }
 
 export const EmployeeTaskReportSchema =

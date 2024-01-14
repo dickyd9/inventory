@@ -9,12 +9,15 @@ export class Transaction extends Document {
   @Prop({ type: String, unique: true, index: true, default: null })
   paymentCode: string;
 
+  @Prop({ type: String, index: true, default: null })
+  bookingCode: string;
+
   @Prop({ type: String, index: true })
   customerCode: string;
 
   @Prop({ type: Object, default: null })
-  service: {
-    serviceCode: string;
+  item: {
+    itemCode: string;
     amount: number;
     point: number;
     employeeCode: string;

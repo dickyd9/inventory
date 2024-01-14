@@ -32,6 +32,7 @@ export class ReportController {
   }
 
   @Get('service')
+  @UseInterceptors(ResponseInterceptor)
   serviceReport(
     @Query('keyword') keyword: string,
     @Query('month') month: string,
@@ -48,6 +49,7 @@ export class ReportController {
   }
 
   @Get('employee')
+  @UseInterceptors(ResponseInterceptor)
   employeeReport(
     @Query('keyword') keyword: string,
     @Query('month') month: string,
@@ -61,6 +63,16 @@ export class ReportController {
       sortColumn,
       sortDirection,
     );
+  }
+
+  @Get('customer')
+  @UseInterceptors(ResponseInterceptor)
+  customerReport(
+    @Query('keyword') keyword: string,
+    @Query('month') month: string,
+    @Query('year') year: string,
+  ) {
+    return this.reportService.reportCustomer(month, year);
   }
 
   @Post('expenses')

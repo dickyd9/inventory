@@ -1,17 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { Services } from '../services/entities/service.entity';
 import { Customer } from '../customer/entities/customer.entity';
 import { Employee } from '../employee/entities/employee.entity';
 import { ServicesCategory } from '../services/entities/service.category.entity';
 import { Transaction } from '../transaction/entities/transaction.entity';
 import { PaymentRelation } from '../transaction/entities/payment-relation';
+import { Item } from '../item/entities/item.entity';
 
 @Injectable()
 export class PosService {
   constructor(
     @InjectModel('Services') private modelServices: Model<Services>,
+    @InjectModel('Item') private modelItem: Model<Item>,
     @InjectModel('Transaction') private modelTransaction: Model<Transaction>,
     @InjectModel('PaymentRelation')
     private modelPayment: Model<PaymentRelation>,
@@ -28,14 +30,60 @@ export class PosService {
 
     if (keyword) {
       const regex = new RegExp(keyword, 'i');
-      query.$or = [{ servicesName: regex }, { servicesCode: regex }];
+      query.$or = [{ itemName: regex }, { itemCode: regex }];
     } else if (categoryName) {
-      query.servicesCategory = categoryName;
+      query.itemCategory = new mongoose.Types.ObjectId(categoryName);
     }
-    const services = await this.modelServices
-      .find(query)
-      .populate('servicesCategory');
-    return services;
+
+    const item = await this.modelItem.aggregate([
+      {
+        $match: query,
+      },
+      {
+        $lookup: {
+          from: 'itemcategories',
+          localField: 'itemCategory',
+          foreignField: '_id',
+          as: 'categoryData',
+        },
+      },
+      {
+        $addFields: {
+          categoryName: { $arrayElemAt: ['$categoryData.categoryName', 0] },
+        },
+      },
+      {
+        $project: {
+          categoryData: 0,
+          itemCategory: 0,
+        },
+      },
+      {
+        $group: {
+          _id: '$categoryName',
+          data: { $push: '$$ROOT' },
+        },
+      },
+    ]);
+
+    const categorizedData = item.reduce((accumulator, service) => {
+      const categoryKey = service._id || 'nullOrEmpty'; // Menggunakan 'nullOrEmpty' jika _id adalah null atau ""
+      if (categoryKey in accumulator) {
+        accumulator[categoryKey].push(...service.data);
+      } else {
+        accumulator[categoryKey] = service.data || [];
+      }
+      return accumulator;
+    }, {});
+
+    const formattedResult = Object.keys(categorizedData).map((categoryKey) => {
+      return {
+        categoryName: categoryKey === 'nullOrEmpty' ? 'All' : categoryKey,
+        services: categorizedData[categoryKey],
+      };
+    });
+
+    return formattedResult;
   }
 
   async getCustomer(keyword: string) {
@@ -80,11 +128,10 @@ export class PosService {
 
     const endOfDay = new Date();
     endOfDay.setHours(23, 59, 59, 999);
-    const trx = await this.modelTransaction
-      .find({
-        createdAt: { $gte: startOfDay, $lte: endOfDay },
-      })
-      // .limit(5);
+    const trx = await this.modelTransaction.find({
+      createdAt: { $gte: startOfDay, $lte: endOfDay },
+    });
+    // .limit(5);
 
     const result = [];
     await Promise.all(
@@ -96,24 +143,24 @@ export class PosService {
           customerCode: e.customerCode,
         });
 
-        const services = [];
-        if (Array.isArray(e.service)) {
-          for (const service of e.service) {
-            const itm = await this.modelServices.findOne({
-              servicesCode: service.serviceCode,
+        const items = [];
+        if (Array.isArray(e.item)) {
+          for (const item of e.item) {
+            const model = await this.modelItem.findOne({
+              itemCode: item.itemCode,
             });
 
-            const serviceResult = {
-              servicesName: itm.servicesName,
-              servicesPrice: itm.servicesPrice,
-              servicesAmount: service.amount,
-              servicesPoint: itm.servicesPoint,
-              totalPoint: itm.servicesPoint * service.amount,
-              totalAmount: service.amount,
-              totalPrice: service.amount * itm.servicesPrice,
+            const itemResult = {
+              itemName: model.itemName,
+              itemPrice: model.itemPrice,
+              itemAmount: item.amount,
+              itemPoint: model.itemPoint,
+              totalPoint: model.itemPoint * item.amount,
+              totalAmount: item.amount,
+              totalPrice: item.amount * model.itemPrice,
             };
 
-            services.push(serviceResult);
+            items.push(itemResult);
           }
         }
 
@@ -130,7 +177,7 @@ export class PosService {
             paymentStatus: payment.paymentStatus,
             changeAmount: payment.changeAmount,
             paymentDate: e?.createdAt,
-            services,
+            items,
           };
 
           result.push(detail);

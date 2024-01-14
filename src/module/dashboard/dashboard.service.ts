@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Item } from '../item/entities/item.entity';
@@ -73,26 +73,37 @@ export class DashboardService {
     const employee = await this.modelEmployee.find();
     const best = [];
 
-    await Promise.all(
-      employee.map(async (e) => {
-        const employeeTask = await this.modelEmployeeTaskReport.find({
-          employeeCode: e.employeeCode,
-        });
-
-        if (employeeTask) {
-          const taskCount = employeeTask.length;
-          const detail = {
-            employeeCode: e.employeeCode,
-            employeeName: e.employeeName,
-            employeeTaskHandle: taskCount,
-          };
-
-          best.push(detail);
-        }
-      }),
-    );
-    
-    const result = best.filter((b) => b.employeeTaskHandle != 0)
+    const employeeTask = await this.modelEmployeeTaskReport.aggregate([
+      {
+        $group: {
+          _id: '$employeeCode',
+          employeeCode: { $first: '$employeeCode' },
+          employeeTaskUsed: { $sum: 1 },
+          incomeEarn: { $sum: '$incomeEarn' },
+        },
+      },
+      {
+        $lookup: {
+          from: 'employees', // Nama koleksi Employee
+          localField: '_id', // Field dari modelEmployeeTaskReport (employeeId)
+          foreignField: 'employeeCode', // Field dari koleksi Employee
+          as: 'employeeData', // Nama field untuk hasil join
+        },
+      },
+      {
+        $unwind: '$employeeData', // Mengurai array hasil join
+      },
+      {
+        $project: {
+          _id: 0,
+          employeeName: '$employeeData.employeeName',
+          employeeCode: '$employeeData.employeeCode',
+          employeeTaskUsed: 1,
+          incomeEarn: 1,
+        },
+      },
+    ]);
+    const result = employeeTask.filter((b) => b.employeeTaskUsed != 0);
     return result;
   }
 

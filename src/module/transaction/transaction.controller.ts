@@ -18,6 +18,7 @@ import { Response } from 'express';
 import { Public } from 'src/config/database/meta';
 import { StorageService } from 'src/common/storage/storage.service';
 import { CreateBookingDto } from './dto/create-transaction.dto';
+import { ResponseInterceptor } from 'src/common/response/response.interceptor';
 
 @Controller('transaction')
 export class TransactionController {
@@ -84,20 +85,20 @@ export class TransactionController {
     return this.transactionService.updatePaymentStatus(paymentCode, payment);
   }
 
-  @Get('payment')
-  getLastTransaction() {
-    return this.transactionService.getLastTransaction();
-  }
+  // @Get('payment')
+  // getLastTransaction() {
+  //   return this.transactionService.getLastTransaction();
+  // }
 
   @Get('payment/:paymentCode')
   getPayment(@Param('paymentCode') paymentCode: string) {
     return this.transactionService.getPaymentDetail(paymentCode);
   }
 
-  @Get(':paymentCode')
-  getTransaction(@Param('paymentCode') paymentCode: string) {
-    return this.transactionService.findOneTrx(paymentCode);
-  }
+  // @Get(':paymentCode')
+  // getTransaction(@Param('paymentCode') paymentCode: string) {
+  //   return this.transactionService.findOneTrx(paymentCode);
+  // }
 
   @Get()
   findAll(
@@ -111,8 +112,24 @@ export class TransactionController {
     return this.transactionService.findAll(day, month, year);
   }
 
+  @Get('booking')
+  @UseInterceptors(ResponseInterceptor)
+  bookingList() {
+    return this.transactionService.bookingList();
+  }
+
   @Post('booking')
   bookingTransaction(@Body() createBookingDto: CreateBookingDto) {
     return this.transactionService.bookingTrx(createBookingDto);
+  }
+
+  @Patch('booking/:bookingId')
+  updateBookingTransaction(
+    @Req() req,
+    @Param('bookingId') bookingId: string,
+    @Body() process: string,
+  ) {
+    const user = req.user;
+    return this.transactionService.updateBooking(bookingId, process, user.sub);
   }
 }

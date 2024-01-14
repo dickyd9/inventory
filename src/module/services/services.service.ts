@@ -141,7 +141,7 @@ export class ServicesService {
     const result = [];
     await Promise.all(
       category.map(async (cat: any) => {
-        const services = await this.modelServices.find({
+        const services = await this.modelItem.find({
           servicesCategory: cat.categoryName,
         });
         const serviceCategory = {

@@ -1,34 +1,36 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { ServicesCategory } from '../services/entities/service.category.entity';
-import { Item } from '../item/entities/item.entity'
+import { Item } from '../item/entities/item.entity';
+import { ItemCategory } from '../item/entities/item.category';
 
 @Injectable()
 export class MasterService {
   constructor(
-    @InjectModel('ServicesCategory')
-    private modelServicesCategory: Model<ServicesCategory>,
+    @InjectModel('ItemCategory')
+    private modelItemCategory: Model<ItemCategory>,
     @InjectModel('Item')
     private modelItem: Model<Item>,
   ) {}
 
-  async getAllService() {
-    const categories = await this.modelServicesCategory.find({
-      deletedAt: null
-    })
+  async getItemCategory() {
+    const categories = await this.modelItemCategory.find({
+      deletedAt: null,
+    });
 
     return {
       message: 'Success Get Data!',
-      data: categories
-    }
+      data: categories,
+    };
   }
 
   async getAllItem() {
-    const item = await this.modelItem.find()
+    const item = await this.modelItem.find({
+      itemType: 'product'
+    });
     return {
       message: 'Message',
-      item
-    }
+      item,
+    };
   }
 }

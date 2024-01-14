@@ -1,22 +1,47 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import mongoose, { Document } from 'mongoose';
+import { ItemCategory } from './item.category';
 
 @Schema({ timestamps: true })
 export class Item extends Document {
   @Prop({ type: String, index: true })
   itemCode: string;
 
-  @Prop({ type: String, index: true })
+  @Prop({ type: String, index: true, required: true })
   itemName: string;
 
-  @Prop({ type: String, default: 'pcs' })
+  @Prop({ type: String, enum: ['services', 'product'], default: null })
+  itemType: string;
+
+  @Prop({ type: Number, default: 0 })
+  itemPoint: number;
+
+  @Prop({ type: String, default: null })
   itemUnit: string;
 
-  @Prop({ type: Number })
+  @Prop({
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'ItemCategory',
+    required: false,
+    default: null,
+  })
+  itemCategory: ItemCategory;
+
+  @Prop({ type: Number, required: true })
   itemPrice: number;
 
   @Prop({ type: Number, default: null })
   itemAmount: number;
+
+  @Prop({ type: String, enum: ['active', 'inactive'], default: 'active' })
+  itemStatus: string;
+
+  @Prop({ type: Object, default: null })
+  itemUseService: {
+    itemCode: string;
+    amountUsage: number;
+    addDate: Date;
+  }[];
 
   @Prop({ type: Date, default: null })
   deletedAt: Date;
@@ -35,7 +60,10 @@ ItemSchema.pre('save', async function (next) {
   const dateString = `${day}${month}${year}`;
 
   const paddedNumber = (jumlahData + 1).toString().padStart(3, '0');
-  const basic = 'ITM-' + paddedNumber + dateString;
+  const basic =
+    this.itemType == 'services'
+      ? 'SE-' + paddedNumber + dateString
+      : 'ITM-' + paddedNumber + dateString;
 
   this.itemCode = basic;
 

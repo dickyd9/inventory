@@ -1,5 +1,5 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { Item } from '../item/entities/item.entity';
 import { Transaction } from '../transaction/entities/transaction.entity';
@@ -12,6 +12,9 @@ import { ItemService } from '../item/item.service';
 import { EmployeeTask } from '../employee/entities/employee.task';
 import { EmployeeTaskReport } from '../employee/entities/employee.task.report';
 import { Services } from '../services/entities/service.entity';
+import { TransactionReport } from '../transaction/entities/transaction.report';
+import { CustomerReport } from '../customer/entities/customer.report.entity';
+import { CustomerPoint } from '../customer/entities/customer.point.entity';
 
 @Injectable()
 export class ReportService {
@@ -19,6 +22,8 @@ export class ReportService {
     @InjectModel('Item') private modelItem: Model<Item>,
     @InjectModel('Services') private modelServices: Model<Services>,
     @InjectModel('Transaction') private modelTransaction: Model<Transaction>,
+    @InjectModel('TransactionReport')
+    private modelTransactionReport: Model<TransactionReport>,
     @InjectModel('PaymentRelation')
     private modelPayment: Model<PaymentRelation>,
     @InjectModel('Employee') private modelEmployee: Model<Employee>,
@@ -26,6 +31,10 @@ export class ReportService {
     @InjectModel('EmployeeTaskReport')
     private modelEmployeeTaskReport: Model<EmployeeTaskReport>,
     @InjectModel('Customer') private modelCustomer: Model<Customer>,
+    @InjectModel('CustomerPoint')
+    private modelCustomerPoint: Model<CustomerPoint>,
+    @InjectModel('CustomerReport')
+    private modelCustomerReport: Model<CustomerReport>,
     @InjectModel('Expenses') private modelExpenses: Model<Expenses>,
     private readonly itemService: ItemService,
   ) {}
@@ -115,74 +124,85 @@ export class ReportService {
       throw new HttpException('Data tidak ditemukan', HttpStatus.NOT_FOUND);
     }
 
-    const result = await this.modelTransaction.aggregate([
-      {
-        $match: query,
-      },
-      { $unwind: '$service' },
-      {
-        $group: {
-          _id: '$service.serviceCode',
-          serviceName: { $first: '$service.servicesName' },
-          amountUsed: { $sum: '$service.amount' },
-          pointUsed: { $sum: '$service.servicesPoint' },
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          serviceCode: '$_id',
-          serviceName: 1,
-          amountUsed: 1,
-          pointUsed: 1,
-        },
-      },
-    ]);
+    const reportService = await this.modelTransactionReport.find();
 
-    // Membuat lookup ke koleksi item untuk mengambil itemName dan itemPrice
-    const summaryWithDetails = await this.modelServices.aggregate([
-      {
-        $match: {
-          servicesCode: {
-            $in: result.map((services) => services.serviceCode),
-          },
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          servicesCode: 1,
-          servicesName: 1,
-          servicesPrice: 1,
-        },
-      },
-    ]);
+    let report = [];
+    await Promise.all(
+      reportService.map(async (rs) => {
+        try {
+          query._id = new mongoose.Types.ObjectId(rs.transactionId);
+          const result = await this.modelTransaction.aggregate([
+            {
+              $match: query,
+            },
+            { $unwind: '$item' },
+            {
+              $group: {
+                _id: '$item.itemCode',
+                itemName: { $first: '$itemName' },
+                amountUsed: { $sum: '$item.amount' },
+                pointUsed: { $sum: '$item.itemPoint' },
+              },
+            },
+            {
+              $project: {
+                _id: 0,
+                itemCode: '$_id',
+                itemName: 1,
+                amountUsed: 1,
+                pointUsed: 1,
+              },
+            },
+          ]);
+          // Membuat lookup ke koleksi item untuk mengambil itemName dan itemPrice
+          const summaryWithDetails = await this.modelItem.aggregate([
+            {
+              $match: {
+                itemCode: {
+                  $in: result.map((item) => item.itemCode),
+                },
+              },
+            },
+            {
+              $project: {
+                _id: 0,
+                itemCode: 1,
+                itemName: 1,
+                itemPrice: 1,
+              },
+            },
+          ]);
 
-    const finalResult = result.map((item) => {
-      const itemDetails = summaryWithDetails.find(
-        (detail) => detail.servicesCode === item.serviceCode,
-      );
-      return {
-        ...item,
-        serviceName: itemDetails?.servicesName || null,
-        totalPrice: item.amountUsed * itemDetails?.servicesPrice,
-      };
-    });
+          const finalResult = result.map((item) => {
+            const itemDetails = summaryWithDetails.find(
+              (detail) => detail.itemCode === item.itemCode,
+            );
+            return {
+              ...item,
+              itemName: itemDetails?.itemName || null,
+              totalPrice: item.amountUsed * itemDetails?.itemPrice,
+            };
+          });
+          const direction =
+            sortDirection === 'asc' ? 1 : sortDirection === 'desc' ? -1 : 0;
 
-    const direction =
-      sortDirection === 'asc' ? 1 : sortDirection === 'desc' ? -1 : 0;
+          finalResult.sort((a, b) => {
+            if (a[sortColumn] < b[sortColumn]) {
+              return -1 * direction;
+            }
+            if (a[sortColumn] > b[sortColumn]) {
+              return 1 * direction;
+            }
+            return 0;
+          });
 
-    finalResult.sort((a, b) => {
-      if (a[sortColumn] < b[sortColumn]) {
-        return -1 * direction;
-      }
-      if (a[sortColumn] > b[sortColumn]) {
-        return 1 * direction;
-      }
-      return 0;
-    });
-
-    return finalResult;
+          report = finalResult;
+        } catch (error) {
+          return;
+        }
+      }),
+    );
+    return report;
   }
 
   async reportEmployee(
@@ -236,21 +256,85 @@ export class ReportService {
       },
     ]);
 
+    const direction =
+      sortDirection === 'asc' ? 1 : sortDirection === 'desc' ? -1 : 0;
+
+    result.sort((a, b) => {
+      if (a[sortColumn] < b[sortColumn]) {
+        return -1 * direction;
+      }
+      if (a[sortColumn] > b[sortColumn]) {
+        return 1 * direction;
+      }
+      return 0;
+    });
+
     return result;
   }
 
+  async reportCustomer(month: any, year: any) {
+    const query: any = {
+      deletedAt: null,
+    };
+    if (month && year) {
+      const awalBulan = new Date(year, month - 1, 1);
+      const akhirBulan = new Date(year, month, 0, 23, 59, 59, 999);
+      query.createdAt = { $gte: awalBulan, $lte: akhirBulan };
+    } else {
+      throw new HttpException('Data tidak ditemukan', HttpStatus.NOT_FOUND);
+    }
+
+    const reportCustomer = await this.modelCustomerReport.aggregate([
+      {
+        $match: query,
+      },
+      {
+        $lookup: {
+          from: 'customers',
+          let: { searchId: { $toObjectId: '$_id' } },
+          pipeline: [
+            { $match: { $expr: [{ _id: '$$searchId' }], deletedAt: null } },
+            { $project: { _id: 0, __v: 0 } },
+          ],
+          as: 'customerData',
+        },
+      },
+      {
+        $unwind: '$customerData',
+      },
+      {
+        $lookup: {
+          from: 'customerpoints',
+          localField: 'customerData.customerCode',
+          foreignField: 'customerCode',
+          as: 'customerPoint',
+        },
+      },
+      {
+        $unwind: '$customerPoint',
+      },
+      {
+        $group: {
+          _id: '$_id',
+          customerData: { $first: '$customerData' },
+          totalPoints: { $sum: '$customerPoint.pointAmount' },
+          totalSpent: { $sum: '$customerPoint.spendTransaction' },
+        },
+      },
+    ]);
+
+    return reportCustomer;  
+  }
+
+  // Expenses
   async addExpenses(createExpenses: CreateExpenses) {
     const expenses = new this.modelExpenses(createExpenses);
     const result = await expenses.save();
     if (createExpenses.itemCode) {
-      try {
-        await this.itemService.updateItemAmount(
-          createExpenses.itemCode,
-          createExpenses.amount,
-        );
-      } catch (error) {
-        throw new HttpException('Item tidak ditemukan', HttpStatus.NOT_FOUND);
-      }
+      await this.itemService.updateItemAmount(
+        createExpenses.itemCode,
+        createExpenses.amount,
+      );
     }
 
     return { message: 'Success Add Data!', data: result };
@@ -324,26 +408,38 @@ export class ReportService {
 
         const summary = totalIncome - totalExpense;
 
-        const paymentUsage = {};
+        const paymentUsage = {
+          income: {},
+          expenses: {},
+        };
 
         payment.forEach((payment) => {
           if (!paymentUsage[payment.paymentMethod]) {
-            paymentUsage[payment.paymentMethod] = 1;
+            paymentUsage.income[payment.paymentMethod] = 1;
           } else {
-            paymentUsage[payment.paymentMethod]++;
+            paymentUsage.income[payment.paymentMethod]++;
+          }
+        });
+
+        expenses.forEach((expenses) => {
+          if (!paymentUsage[expenses.paymentMethod]) {
+            paymentUsage.expenses[expenses.paymentMethod] = 1;
+          } else {
+            paymentUsage.expenses[expenses.paymentMethod]++;
           }
         });
 
         const financialReport = {
           month,
           year,
+          totalTransaction: transactions.length,
           totalIncome,
           totalExpense,
           summary,
         };
 
         return {
-          message: '',
+          message: 'Data Found!',
           data: {
             financialReport,
             paymentUsage,

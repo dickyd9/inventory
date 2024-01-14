@@ -8,12 +8,15 @@ export class ItemCategory extends Document {
 
   @Prop({ type: String })
   categoryName: string;
+
+  @Prop({ type: Date })
+  deletedAt: Date;
 }
 
 export const ItemCategorySchema = SchemaFactory.createForClass(ItemCategory);
 
 ItemCategorySchema.pre('save', async function (next) {
-  const jumlahData = await this.$model('Services').countDocuments({
+  const jumlahData = await this.$model('ItemCategory').countDocuments({
     deletedAt: null,
   });
   const date = new Date();
@@ -23,7 +26,7 @@ ItemCategorySchema.pre('save', async function (next) {
   const dateString = `${day}${month}${year}`;
 
   const paddedNumber = (jumlahData + 1).toString().padStart(3, '0');
-  const basic = 'ITM-' + paddedNumber + dateString;
+  const basic = 'CAT-' + paddedNumber + dateString;
 
   this.categoryCode = basic;
 

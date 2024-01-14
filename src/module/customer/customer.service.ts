@@ -121,15 +121,15 @@ export class CustomerService {
         totalPrice: trx.totalPrice,
         service: [],
       };
-      for (const service of trx.service) {
-        const itm = await this.modelServices.findOne({
-          servicesCode: service.serviceCode,
+      for (const service of trx.item) {
+        const itm = await this.modelItem.findOne({
+          itemCode: service.itemCode,
         });
         trxRef.service.push({
-          serviceCode: itm.servicesCode,
-          serviceName: itm.servicesName,
-          servicePrice: itm.servicesPrice,
-          servicePoint: itm.servicesPoint,
+          serviceCode: itm.itemCode,
+          serviceName: itm.itemName,
+          servicePrice: itm.itemPrice,
+          servicePoint: itm.itemPoint,
         });
       }
       report.transaction.push(trxRef);

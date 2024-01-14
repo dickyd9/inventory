@@ -21,7 +21,7 @@ export class Customer extends Document {
   @Prop({ type: String })
   customerContact: string;
 
-  @Prop({ type: String, enum: ['male', 'female'], default: null })
+  @Prop({ type: String, enum: ['male', 'female'], default: 'male' })
   customerGender: string;
 
   @Prop({ type: Date, default: null })

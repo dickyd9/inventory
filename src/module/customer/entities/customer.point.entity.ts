@@ -9,11 +9,11 @@ export class CustomerPoint extends Document {
   @Prop({ type: String, index: true })
   transactionRef: string;
 
-  @Prop({ type: String, default: null })
-  spendTransaction: string;
+  @Prop({ type: Number, default: null })
+  spendTransaction: number;
 
-  @Prop({ type: String })
-  pointAmount: string;
+  @Prop({ type: Number })
+  pointAmount: number;
 
   @Prop({ type: Date })
   deletedAt: Date;

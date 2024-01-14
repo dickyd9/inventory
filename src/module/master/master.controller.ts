@@ -6,7 +6,7 @@ export class MasterController {
   constructor(private readonly masterService: MasterService) {}
   @Get('/category')
   getAllData() {
-    return this.masterService.getAllService();
+    return this.masterService.getItemCategory();
   }
 
   @Get('/item')
