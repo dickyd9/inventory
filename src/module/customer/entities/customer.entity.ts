@@ -6,22 +6,22 @@ export class Customer extends Document {
   @Prop({ type: String, index: true, default: null })
   customerCode: string;
 
-  @Prop({ type: String })
+  @Prop({ type: String, default: null })
   customerName: string;
 
-  @Prop({ type: String })
+  @Prop({ type: String, default: null })
   customerAddress: string;
 
-  @Prop({ type: String })
+  @Prop({ type: String, default: null })
   customerEmail: string;
 
-  @Prop({ type: Date })
+  @Prop({ type: Date, default: null })
   customerDOB: Date;
 
-  @Prop({ type: String })
+  @Prop({ type: String, default: null })
   customerContact: string;
 
-  @Prop({ type: String, enum: ['male', 'female'], default: 'male' })
+  @Prop({ type: String, default: null })
   customerGender: string;
 
   @Prop({ type: Date, default: null })

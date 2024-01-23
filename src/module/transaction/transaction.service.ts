@@ -24,11 +24,13 @@ import {
   BookingTransaction,
   BookingTransactionSchema,
 } from './entities/booking-transaction';
+import { ItemReport } from '../item/entities/item.report.entity';
 
 @Injectable()
 export class TransactionService {
   constructor(
     @InjectModel('Item') private modelItem: Model<Item>,
+    @InjectModel('ItemReport') private modelItemReport: Model<ItemReport>,
     @InjectModel('Transaction') private modelTransaction: Model<Transaction>,
     @InjectModel('EmployeeTaskReport')
     private modelEmployeeTaskReport: Model<EmployeeTaskReport>,
@@ -227,6 +229,12 @@ export class TransactionService {
               }
             }
 
+            const itemData = {
+              itemCode: itm.itemCode,
+              amount: item.amount,
+            };
+            const itemReport = new this.modelItemReport(itemData);
+
             const taskemployee = new this.modelEmployeeTaskReport({
               employeeCode: trx.employeeCode,
               transactionRef: trx?.invoiceCode,
@@ -240,6 +248,8 @@ export class TransactionService {
               spendTransaction: transaction?.totalPrice,
               pointAmount: transaction?.totalPoint,
             });
+
+            await itemReport.save();
             await taskemployee.save();
             await customerPoint.save();
           });
@@ -251,7 +261,7 @@ export class TransactionService {
       });
 
       const reportCustomer = new this.modelCustomerReport({
-        customerId: customer._id,
+        customerCode: customer.customerCode,
         transactionId: transaction._id,
       });
 
@@ -345,84 +355,56 @@ export class TransactionService {
   }
 
   async getPaymentDetail(paymentCode: string) {
-    const payment = await this.modelPayment.findOne({
-      paymentCode: paymentCode,
-    });
-
-    // const transaction = await this.modelTransaction.findOne({
-    //   paymentCode: paymentCode,
-    // });
-
     const transaction = await this.modelTransaction.aggregate([
       {
         $match: {
           paymentCode: paymentCode,
         },
       },
-
-      // Unwind array item agar bisa digabungkan dengan koleksi item
-      { $unwind: '$item' },
-
-      // Lookup untuk menggabungkan data dari koleksi item
       {
         $lookup: {
           from: 'items',
           localField: 'item.itemCode',
           foreignField: 'itemCode',
-          as: 'matchedItem',
+          as: 'itemDetails',
         },
       },
-
-      // Unwind hasil lookup item
-      { $unwind: '$matchedItem' },
-
-      // { $match: { 'item.employeeCode': { $ne: '' } } },
-
-      // Lookup untuk menggabungkan data dari koleksi employee
-      // {
-      //   $lookup: {
-      //     from: 'employees',
-      //     localField: 'item.employeeCode',
-      //     foreignField: 'employeeCode',
-      //     as: 'matchedEmployee',
-      //   },
-      // },
-
-      // // Unwind hasil lookup employee
-      // { $unwind: '$matchedEmployee' },
-
-      // // Group kembali data transaksi jika diperlukan
       {
-        $group: {
-          _id: '$_id',
-          userId: { $first: '$userId' },
-          paymentCode: { $first: '$paymentCode' },
-          customerCode: { $first: '$customerCode' },
-          item: { $push: '$item' }, // Jika ingin mengelompokkan kembali item menjadi array
-          totalPoint: { $first: '$totalPoint' },
-          totalAmount: { $first: '$totalAmount' },
-          totalPrice: { $first: '$totalPrice' },
-          isDone: { $first: '$isDone' },
-          createdAt: { $first: '$createdAt' },
-          updatedAt: { $first: '$updatedAt' },
-          __v: { $first: '$__v' },
-          matchedItem: { $push: '$matchedItem' }, // Simpan hasil lookup item jika diperlukan
-          // matchedEmployee: { $push: '$matchedEmployee' }, // Simpan hasil lookup employee jika diperlukan
-          // Sesuaikan dengan kebutuhan lainnya
+        $lookup: {
+          from: 'employees',
+          localField: 'item.employeeCode',
+          foreignField: 'employeeCode',
+          as: 'employeeDetails',
+        },
+      },
+      {
+        $lookup: {
+          from: 'customers',
+          localField: 'customerCode',
+          foreignField: 'customerCode',
+          as: 'customerDetail',
+        },
+      },
+      {
+        $unwind: '$customerDetail',
+      },
+      {
+        $addFields: {
+          'item.itemName': { $arrayElemAt: ['$itemDetails.itemName', 0] },
+          'item.employeeName': {
+            $arrayElemAt: ['$employeeDetails.employeeName', 0],
+          },
+        },
+      },
+      {
+        $project: {
+          itemDetails: 0,
+          employeeDetails: 0,
         },
       },
     ]);
 
-    console.log(transaction);
-
-    // if (!transaction) {
-    //   throw new HttpException('Transaction not found', HttpStatus.NOT_FOUND);
-    // }
-
-    // return {
-    //   ...transaction.toObject(),
-    //   ...payment.toObject(),
-    // };
+    return transaction[0];
   }
 
   async getLastTransaction() {

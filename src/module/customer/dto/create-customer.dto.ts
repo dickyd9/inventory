@@ -17,9 +17,11 @@ export class CreateCustomerDto {
   customerDOB: string;
 
   @IsString()
+  @IsOptional()
   customerContact: number;
 
   @IsEnum(['male', 'female'])
   @IsString()
+  @IsOptional()
   customerGender: string;
 }

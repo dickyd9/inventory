@@ -7,10 +7,10 @@ export class Item extends Document {
   @Prop({ type: String, index: true })
   itemCode: string;
 
-  @Prop({ type: String, index: true, required: true })
+  @Prop({ type: String, index: true })
   itemName: string;
 
-  @Prop({ type: String, enum: ['services', 'product'], default: null })
+  @Prop({ type: String, default: null })
   itemType: string;
 
   @Prop({ type: Number, default: 0 })
@@ -22,18 +22,17 @@ export class Item extends Document {
   @Prop({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'ItemCategory',
-    required: false,
     default: null,
   })
   itemCategory: ItemCategory;
 
-  @Prop({ type: Number, required: true })
+  @Prop({ type: Number })
   itemPrice: number;
 
   @Prop({ type: Number, default: null })
   itemAmount: number;
 
-  @Prop({ type: String, enum: ['active', 'inactive'], default: 'active' })
+  @Prop({ type: String, default: 'active' })
   itemStatus: string;
 
   @Prop({ type: Object, default: null })

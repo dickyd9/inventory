@@ -4,7 +4,7 @@ import { Document } from 'mongoose'
 @Schema({ timestamps: true })
 export class CustomerReport extends Document {
   @Prop({ type: String, required: true })
-  customerId: string;
+  customerCode: string;
 
   @Prop({ type: String, required: true })
   transactionId: string;

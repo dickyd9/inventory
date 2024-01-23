@@ -30,6 +30,7 @@ import { StorageModule } from './common/storage/storage.module';
 import { ServicesModule } from './module/services/services.module';
 import { PosModule } from './module/pos/pos.module';
 import { MasterModule } from './module/master/master.module';
+import { ExportModule } from './common/export/export.module';
 
 @Module({
   imports: [
@@ -81,6 +82,7 @@ import { MasterModule } from './module/master/master.module';
     ServicesModule,
     PosModule,
     MasterModule,
+    ExportModule,
   ],
   controllers: [AppController],
   providers: [

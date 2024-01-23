@@ -21,6 +21,7 @@ import { ServicesCategorySchema } from '../services/entities/service.category.en
 import { CustomerReportSchema } from '../customer/entities/customer.report.entity';
 import { TransactionReportSchema } from '../transaction/entities/transaction.report';
 import { BookingTransactionSchema } from '../transaction/entities/booking-transaction';
+import { ItemReportSchema } from '../item/entities/item.report.entity';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { BookingTransactionSchema } from '../transaction/entities/booking-transa
       { name: 'Services', schema: ServicesSchema },
       { name: 'ServicesCategory', schema: ServicesCategorySchema },
       { name: 'Item', schema: ItemSchema },
+      { name: 'ItemReport', schema: ItemReportSchema },
       { name: 'ItemCategory', schema: ItemCategorySchema },
       { name: 'BookingTransaction', schema: BookingTransactionSchema },
       { name: 'Transaction', schema: TransactionSchema },
@@ -61,6 +63,7 @@ import { BookingTransactionSchema } from '../transaction/entities/booking-transa
       { name: 'Services', schema: ServicesSchema },
       { name: 'ServicesCategory', schema: ServicesCategorySchema },
       { name: 'Item', schema: ItemSchema },
+      { name: 'ItemReport', schema: ItemReportSchema },
       { name: 'ItemCategory', schema: ItemCategorySchema },
       { name: 'BookingTransaction', schema: BookingTransactionSchema },
       { name: 'Transaction', schema: TransactionSchema },

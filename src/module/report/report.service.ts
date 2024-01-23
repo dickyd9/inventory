@@ -15,6 +15,7 @@ import { Services } from '../services/entities/service.entity';
 import { TransactionReport } from '../transaction/entities/transaction.report';
 import { CustomerReport } from '../customer/entities/customer.report.entity';
 import { CustomerPoint } from '../customer/entities/customer.point.entity';
+import { ExportService } from 'src/common/export/export.service';
 
 @Injectable()
 export class ReportService {
@@ -37,6 +38,7 @@ export class ReportService {
     private modelCustomerReport: Model<CustomerReport>,
     @InjectModel('Expenses') private modelExpenses: Model<Expenses>,
     private readonly itemService: ItemService,
+    private readonly exportService: ExportService,
   ) {}
 
   async reportTransaction(report: any, month: any, year: any) {
@@ -108,6 +110,108 @@ export class ReportService {
     return sortDate;
   }
 
+  async reportTransactionDetail(paymentCode: string) {
+    const transaction = await this.modelTransaction.aggregate([
+      {
+        $match: {
+          paymentCode: paymentCode,
+        },
+      },
+      {
+        $lookup: {
+          from: 'paymentrelations',
+          localField: 'paymentCode',
+          foreignField: 'paymentCode',
+          as: 'paymentDetails',
+        },
+      },
+      {
+        $lookup: {
+          from: 'customers',
+          localField: 'customerCode',
+          foreignField: 'customerCode',
+          as: 'customerDetail',
+        },
+      },
+      {
+        $unwind: '$paymentDetails',
+      },
+      {
+        $unwind: '$customerDetail',
+      },
+    ]);
+
+    let result;
+    await Promise.all(
+      transaction.map(async (data) => {
+        const items = await this.modelItem.aggregate([
+          {
+            $match: {
+              itemCode: {
+                $in: data.item.map((item) => item.itemCode),
+              },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              itemCode: 1,
+              itemName: 1,
+              itemPrice: 1,
+            },
+          },
+        ]);
+
+        const employeeHandle = await this.modelEmployee.aggregate([
+          {
+            $match: {
+              employeeCode: {
+                $in: data.item.map((item) => item.employeeCode),
+              },
+            },
+          },
+        ]);
+        const finalResult = data.item.map((item) => {
+          const itemDetails = items.find((i) => item.itemCode == i.itemCode);
+
+          return {
+            itemCode: itemDetails.itemCode,
+            itemName: itemDetails.itemName,
+            itemPoint: itemDetails.itemPoint,
+            itemPrice: itemDetails.itemPrice,
+            amount: item.amount,
+            employeeTask: employeeHandle[0],
+          };
+        });
+
+        console.log(data);
+        result = {
+          paymentCode: data.paymentCode,
+          customerCode: data.customerCode,
+          item: finalResult,
+          totalPoint: data.totalPoint,
+          totalAmount: data.totalAmount,
+          totalPrice: data.totalPrice,
+          paymentDetail: data.paymentDetails,
+          customerDetail: data.customerDetail,
+        };
+      }),
+    );
+
+    return result;
+  }
+
+  async exportTransaction(res: any, report: any, month: any, year: any) {
+    try {
+      const data = await this.reportTransaction(report, month, year);
+      const result = await this.exportService.exportExcel(data, res);
+
+      return result;
+    } catch (error) {
+      throw new HttpException('Data Not Found', HttpStatus.NOT_FOUND);
+    }
+  }
+
   async reportService(
     month: any,
     year: any,
@@ -154,6 +258,7 @@ export class ReportService {
               },
             },
           ]);
+
           // Membuat lookup ke koleksi item untuk mengambil itemName dan itemPrice
           const summaryWithDetails = await this.modelItem.aggregate([
             {
@@ -323,7 +428,15 @@ export class ReportService {
       },
     ]);
 
-    return reportCustomer;  
+    return reportCustomer;
+  }
+
+  async detailReportCustomer(customerCode: string) {
+    const detailCustomer = await this.modelCustomerReport.find({
+      customerCode: customerCode,
+    });
+
+    return detailCustomer;
   }
 
   // Expenses
