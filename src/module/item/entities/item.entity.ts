@@ -38,7 +38,7 @@ export class Item extends Document {
   @Prop({ type: Object, default: null })
   itemUseService: {
     itemCode: string;
-    amountUsage: number;
+    amount: number;
     addDate: Date;
   }[];
 

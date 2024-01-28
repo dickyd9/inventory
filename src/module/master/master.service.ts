@@ -33,4 +33,13 @@ export class MasterService {
       item,
     };
   }
+  async getAllService() {
+    const data = await this.modelItem.find({
+      itemType: 'services'
+    });
+    return {
+      message: 'Message',
+      data,
+    };
+  }
 }

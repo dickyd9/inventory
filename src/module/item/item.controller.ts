@@ -47,6 +47,18 @@ export class ItemController {
     return this.itemService.assignItemCat(itemId, categoryId);
   }
 
+  @Put('/assign-item/:itemCode')
+  assignItemService(
+    @Param('itemCode') itemCode: string,
+    @Body()
+    itemAssign: {
+      itemCode: string;
+      amount: number;
+    }[],
+  ) {
+    return this.itemService.assignItemServices(itemCode, itemAssign);
+  }
+
   @Delete(':itemId')
   remove(@Param('itemId') itemId: string) {
     return this.itemService.remove(itemId);

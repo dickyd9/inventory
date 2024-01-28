@@ -156,9 +156,7 @@ export class TransactionService {
   async updatePaymentStatus(paymentCode: string, payment: any) {
     try {
       const { paymentMethod, paymentPrice } = payment;
-      const transaction = await this.modelTransaction.findOne({
-        paymentCode,
-      });
+      const transaction = await this.modelTransaction.findOne({ paymentCode });
       let paymentAmount = paymentPrice;
       let changeAmount = paymentPrice - transaction.totalPrice;
 
@@ -167,38 +165,17 @@ export class TransactionService {
         changeAmount = 0;
       }
 
-      await this.modelPayment.updateOne(
-        {
-          paymentCode: paymentCode,
-        },
-        {
-          $set: {
-            paymentStatus: 'PAID',
-            paymentMethod: paymentMethod,
-            totalPrice: transaction.totalPrice,
-            paymentAmount: paymentAmount,
-            changeAmount: changeAmount,
-          },
-        },
-        {
-          new: true,
-        },
-      );
-
-      const payments = await this.modelPayment.findOne({
-        paymentCode: paymentCode,
-      });
+      const payments = await this.modelPayment.findOne({ paymentCode });
 
       const customer = await this.modelCustomer.findOne({
         customerCode: transaction.customerCode,
       });
 
       const items = [];
+
       if (Array.isArray(transaction.item)) {
         for (const item of transaction.item) {
-          const itm = await this.modelItem.findOne({
-            itemCode: item.itemCode,
-          });
+          const itm = await this.modelItem.findOne({ itemCode: item.itemCode });
 
           const itemResult = {
             itemName: itm.itemName,
@@ -212,61 +189,29 @@ export class TransactionService {
 
           items.push(itemResult);
 
-          transaction.item.forEach(async (trx: any) => {
-            const itemService = await this.modelItem.findOne({
-              itemCode: trx.itemCode,
-            });
+          // Melakukan update item yang digunakan dalam transaksi
+          await this.updateItemUsage(item);
 
-            if (itemService.itemType == 'product') {
-              const item = await this.modelItem.findOne({
-                itemCode: trx?.itemCode,
-              });
+          // Melakukan update item produk jika item tersebut merupakan produk
+          if (itm.itemType === 'product') {
+            await this.updateProductItem(item);
+          }
 
-              if (item) {
-                await item.updateOne({
-                  itemAmount: item.itemAmount - trx.amount,
-                });
-              }
-            }
+          // Melakukan penyimpanan laporan item, laporan tugas karyawan, dan poin pelanggan
+          await this.saveItemReports(
+            itm,
+            item,
+            transaction,
+            payments?.invoiceCode,
+          );
 
-            const itemData = {
-              itemCode: itm.itemCode,
-              amount: item.amount,
-            };
-            const itemReport = new this.modelItemReport(itemData);
+          // Melakukan penyimpanan poin pelanggan
+          await this.saveCustomerPoint(transaction, payments?.invoiceCode);
 
-            const taskemployee = new this.modelEmployeeTaskReport({
-              employeeCode: trx.employeeCode,
-              transactionRef: trx?.invoiceCode,
-              incomeEarn: itemService?.itemPrice,
-              itemCode: trx.itemCode,
-            });
-
-            const customerPoint = new this.modelCustomerPoint({
-              customerCode: transaction.customerCode,
-              transactionRef: payments?.invoiceCode,
-              spendTransaction: transaction?.totalPrice,
-              pointAmount: transaction?.totalPoint,
-            });
-
-            await itemReport.save();
-            await taskemployee.save();
-            await customerPoint.save();
-          });
+          // Melakukan penyimpanan laporan transaksi dan laporan pelanggan
+          await this.saveTransactionReports(transaction, customer);
         }
       }
-
-      const reportTransaction = new this.modelTransactionReport({
-        transactionId: transaction._id,
-      });
-
-      const reportCustomer = new this.modelCustomerReport({
-        customerCode: customer.customerCode,
-        transactionId: transaction._id,
-      });
-
-      await reportTransaction.save();
-      await reportCustomer.save();
 
       const data = {
         invoice: payments?.invoiceCode,
@@ -283,13 +228,124 @@ export class TransactionService {
         items,
       };
 
+      // Melakukan pembaruan status pembayaran
+      await this.modelPayment.updateOne(
+        { paymentCode: paymentCode },
+        {
+          $set: {
+            paymentStatus: 'PAID',
+            paymentMethod: paymentMethod,
+            totalPrice: transaction.totalPrice,
+            paymentAmount: paymentAmount,
+            changeAmount: changeAmount,
+          },
+        },
+        {
+          new: true,
+        },
+      );
+
       return {
-        message: 'Payment Success',
+        message: 'Pembayaran Berhasil',
         data,
       };
     } catch (error) {
-      throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        error.message || 'Terjadi Kesalahan',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
+  }
+
+  // Helper function untuk melakukan update item yang digunakan dalam transaksi
+  async updateItemUsage(item) {
+    const itemService = await this.modelItem.findOne({
+      itemCode: item.itemCode,
+    });
+
+    if (itemService?.itemUseService) {
+      await Promise.all(
+        itemService?.itemUseService.map(async (is) => {
+          const item = await this.modelItem.findOne({ itemCode: is?.itemCode });
+
+          if (item.itemAmount < is.amount) {
+            throw new HttpException(
+              'Item tidak mencukupi, silahkan cek stok item',
+              HttpStatus.BAD_REQUEST,
+            );
+          } else {
+            await item.updateOne({
+              itemAmount: item.itemAmount - is?.amount,
+            });
+          }
+        }),
+      );
+    }
+  }
+
+  // Helper function untuk melakukan update item produk jika item tersebut merupakan produk
+  async updateProductItem(item) {
+    const productItem = await this.modelItem.findOne({
+      itemCode: item?.itemCode,
+    });
+
+    if (productItem && productItem.itemAmount > 0) {
+      await productItem.updateOne({
+        itemAmount: productItem.itemAmount - item.amount,
+      });
+    } else {
+      throw new HttpException(
+        'Item tidak mencukupi, silahkan cek stok item',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  // Helper function untuk menyimpan laporan item, laporan tugas karyawan, dan poin pelanggan
+  async saveItemReports(itm, item, transaction, invoiceCode) {
+    const itemData = {
+      itemCode: itm.itemCode,
+      amount: item.amount,
+    };
+
+    const itemReport = new this.modelItemReport(itemData);
+
+    const taskemployee = new this.modelEmployeeTaskReport({
+      employeeCode: item.employeeCode,
+      transactionRef: transaction?.invoiceCode,
+      incomeEarn: item?.itemPrice,
+      itemCode: item.itemCode,
+    });
+
+    await itemReport.save();
+    await taskemployee.save();
+  }
+
+  // Helper function untuk menyimpan poin pelanggan
+  async saveCustomerPoint(transaction, invoiceCode) {
+    const customerPoint = new this.modelCustomerPoint({
+      customerCode: transaction.customerCode,
+      transactionRef: invoiceCode,
+      spendTransaction: transaction?.totalPrice,
+      pointAmount: transaction?.totalPoint,
+    });
+
+    await customerPoint.save();
+  }
+
+  // Helper function untuk menyimpan laporan transaksi dan laporan pelanggan
+  async saveTransactionReports(transaction, customer) {
+    const reportTransaction = new this.modelTransactionReport({
+      transactionId: transaction._id,
+    });
+
+    const reportCustomer = new this.modelCustomerReport({
+      customerCode: customer.customerCode,
+      transactionId: transaction._id,
+    });
+
+    await reportTransaction.save();
+    await reportCustomer.save();
   }
 
   async checkTransactionStatus(

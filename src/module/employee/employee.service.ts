@@ -120,6 +120,36 @@ export class EmployeeService {
     }
 
     const employee = await this.modelEmployee.findOne({ employeeCode: code });
+    const employeeTaskReport = await this.modelEmployeeTaskReport.aggregate([
+      {
+        $group: {
+          _id: '$employeeCode',
+          employeeCode: { $first: '$employeeCode' },
+          employeeTaskUsed: { $sum: 1 },
+          incomeEarn: { $sum: '$incomeEarn' },
+        },
+      },
+      {
+        $lookup: {
+          from: 'employees', // Nama koleksi Employee
+          localField: '_id', // Field dari modelEmployeeTaskReport (employeeId)
+          foreignField: 'employeeCode', // Field dari koleksi Employee
+          as: 'employeeData', // Nama field untuk hasil join
+        },
+      },
+      {
+        $unwind: '$employeeData', // Mengurai array hasil join
+      },
+      {
+        $project: {
+          _id: 0,
+          employeeName: '$employeeData.employeeName',
+          employeeCode: '$employeeData.employeeCode',
+          employeeTaskUsed: 1,
+          incomeEarn: 1,
+        },
+      },
+    ]);
 
     if (!employee) {
       return null;
@@ -134,6 +164,7 @@ export class EmployeeService {
 
     return {
       ...employee.toObject(),
+      employeeTaskReport,
       report,
     };
   }

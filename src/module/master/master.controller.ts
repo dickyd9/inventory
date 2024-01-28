@@ -13,4 +13,9 @@ export class MasterController {
   getallItem() {
     return this.masterService.getAllItem();
   }
+
+  @Get('/service')
+  getallService() {
+    return this.masterService.getAllService();
+  }
 }

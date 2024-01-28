@@ -139,14 +139,21 @@ export class ItemService {
     };
   }
 
-  async assignItemServices(itemId: string, itemAssign: object[]) {
+  async assignItemServices(
+    itemCode: string,
+    itemAssign: {
+      itemCode: string;
+      amount: number;
+    }[],
+  ) {
     try {
-      const item = await this.modelItem.findOne({ _id: itemId });
+      const item = await this.modelItem.findOne({ itemCode: itemCode });
 
       const useService = [];
-      itemAssign.map((item: any) => {
+      console.log(itemAssign);
+      itemAssign?.map((item: any) => {
         useService.push({
-          itemCode: item?.code,
+          itemCode: item?.itemCode,
           amount: item?.amount,
           addDate: new Date(),
         });
@@ -160,7 +167,9 @@ export class ItemService {
         message: `${item.itemName} success assign item!`,
         result,
       };
-    } catch (error) {}
+    } catch (error) {
+      throw new HttpException(error, HttpStatus.BAD_REQUEST);
+    }
   }
 
   async assignItemCat(itemId: any, categoryId: any) {

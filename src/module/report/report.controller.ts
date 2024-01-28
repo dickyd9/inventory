@@ -73,6 +73,11 @@ export class ReportController {
     );
   }
 
+  @Get('service/:itemCode')
+  detailServiceReport(@Param('itemCode') itemCode: string) {
+    return this.reportService.detailReportService(itemCode);
+  }
+
   @Get('employee')
   @UseInterceptors(ResponseInterceptor)
   employeeReport(
@@ -88,21 +93,6 @@ export class ReportController {
       sortColumn,
       sortDirection,
     );
-  }
-
-  @Get('customer')
-  @UseInterceptors(ResponseInterceptor)
-  customerReport(
-    @Query('keyword') keyword: string,
-    @Query('month') month: string,
-    @Query('year') year: string,
-  ) {
-    return this.reportService.reportCustomer(month, year);
-  }
-
-  @Get('customer/:customerCode')
-  detailCustomerReport(@Param('customerCode') customerCode: string) {
-    return this.reportService.detailReportCustomer(customerCode);
   }
 
   @Post('expenses')
