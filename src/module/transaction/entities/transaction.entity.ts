@@ -3,9 +3,6 @@ import { Document } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class Transaction extends Document {
-  @Prop({ type: String })
-  userId: string;
-
   @Prop({ type: String, unique: true, index: true, default: null })
   paymentCode: string;
 

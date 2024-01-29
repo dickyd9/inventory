@@ -72,12 +72,11 @@ export class TransactionService {
 
   // Transaction Proccess
 
-  async createOrder(userId: string, userCode: any) {
+  async createOrder(userCode: any) {
     try {
       const { customerCode } = userCode;
       const ticketTransaction = {
         customerCode,
-        userId,
       };
 
       const customer = await this.modelCustomer.findOne({
@@ -641,7 +640,7 @@ export class TransactionService {
 
       const { customerCode, item } = book;
       if (body?.process == 'proses') {
-        const order = await this.createOrder(userId, { customerCode });
+        const order = await this.createOrder({ customerCode });
         await this.addItem(order.paymentCode, { data: item });
         await book.updateOne({
           status: 'SUCCESS',

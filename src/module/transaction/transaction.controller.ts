@@ -48,11 +48,8 @@ export class TransactionController {
     userCode: {
       customerCode: string;
     },
-    @Req() req,
   ) {
-    const user = req.user;
-
-    return this.transactionService.createOrder(user.sub, userCode);
+    return this.transactionService.createOrder(userCode);
   }
 
   @Put(':paymentCode')
