@@ -81,13 +81,13 @@ export class ItemService {
     return item;
   }
 
-  async updateItemAmount(itemCode: string, amount: number) {
+  async updateItemAmount(itemCode: string, amount: number, type: string) {
     try {
       const item = await this.modelItem.findOne({ itemCode: itemCode });
       if (!item) {
         throw new HttpException('Item tidak ditemukan', HttpStatus.NOT_FOUND);
       }
-      if (item?.itemAmount < 1) {
+      if (type !== 'expenses' && item?.itemAmount < 1) {
         throw new HttpException(
           'Jumlah Item Tidak Mencukupi!',
           HttpStatus.EXPECTATION_FAILED,

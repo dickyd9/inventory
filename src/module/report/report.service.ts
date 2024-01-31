@@ -458,6 +458,7 @@ export class ReportService {
       await this.itemService.updateItemAmount(
         createExpenses.itemCode,
         createExpenses.amount,
+        'expenses'
       );
     }
 
