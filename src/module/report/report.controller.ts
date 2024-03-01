@@ -1,14 +1,19 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  Header,
+  Param,
   Post,
   Query,
+  Res,
   UseInterceptors,
 } from '@nestjs/common';
 import { ReportService } from './report.service';
 import { CreateExpenses } from './dto/create-expenses.dto';
 import { ResponseInterceptor } from 'src/common/response/response.interceptor';
+import { Public } from 'src/config/database/meta';
 
 @Controller('report')
 export class ReportController {
@@ -29,7 +34,30 @@ export class ReportController {
     return this.reportService.reportTransaction(report, month, year);
   }
 
+  @Public()
+  @Get('transaction/export')
+  @Header('Content-Type', 'text/xlsx')
+  exportExcel(
+    @Res() res,
+    @Query('report')
+    report: any,
+    @Query('day')
+    day: any,
+    @Query('month')
+    month: any,
+    @Query('year')
+    year: any,
+  ) {
+    return this.reportService.exportTransaction(res, report, month, year);
+  }
+
+  @Get('transaction/:paymentCode')
+  transactionReportDetail(@Param('paymentCode') paymentCode: string) {
+    return this.reportService.reportTransactionDetail(paymentCode);
+  }
+
   @Get('service')
+  @UseInterceptors(ResponseInterceptor)
   serviceReport(
     @Query('keyword') keyword: string,
     @Query('month') month: string,
@@ -45,7 +73,13 @@ export class ReportController {
     );
   }
 
+  @Get('service/:itemCode')
+  detailServiceReport(@Param('itemCode') itemCode: string) {
+    return this.reportService.detailReportService(itemCode);
+  }
+
   @Get('employee')
+  @UseInterceptors(ResponseInterceptor)
   employeeReport(
     @Query('keyword') keyword: string,
     @Query('month') month: string,
@@ -75,6 +109,11 @@ export class ReportController {
     year: any,
   ) {
     return this.reportService.getExpenses(month, year);
+  }
+
+  @Delete('expenses/:expensesId')
+  deletedExpenses(@Param('expensesId') expensesId: string) {
+    return this.reportService.deleteExpenses(expensesId);
   }
 
   @Get('info')

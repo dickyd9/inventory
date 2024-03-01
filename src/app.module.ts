@@ -29,6 +29,8 @@ import { DashboardModule } from './module/dashboard/dashboard.module';
 import { StorageModule } from './common/storage/storage.module';
 import { ServicesModule } from './module/services/services.module';
 import { PosModule } from './module/pos/pos.module';
+import { MasterModule } from './module/master/master.module';
+import { ExportModule } from './common/export/export.module';
 
 @Module({
   imports: [
@@ -79,6 +81,8 @@ import { PosModule } from './module/pos/pos.module';
     StorageModule,
     ServicesModule,
     PosModule,
+    MasterModule,
+    ExportModule,
   ],
   controllers: [AppController],
   providers: [

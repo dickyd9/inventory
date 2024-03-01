@@ -3,18 +3,18 @@ import { Document } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class Transaction extends Document {
-  @Prop({ type: String })
-  userId: string;
-
   @Prop({ type: String, unique: true, index: true, default: null })
   paymentCode: string;
+
+  @Prop({ type: String, index: true, default: null })
+  bookingCode: string;
 
   @Prop({ type: String, index: true })
   customerCode: string;
 
   @Prop({ type: Object, default: null })
-  service: {
-    serviceCode: string;
+  item: {
+    itemCode: string;
     amount: number;
     point: number;
     employeeCode: string;
@@ -42,8 +42,18 @@ export class Transaction extends Document {
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);
 
 TransactionSchema.pre('save', async function (next) {
-  const randomPart = Math.random().toString().slice(2, 10);
+  const jumlahData = await this.$model('Transaction').countDocuments({
+    deletedAt: null,
+  });
+  const date = new Date();
+  const month = date.getUTCMonth() + 1;
+  const day = date.getUTCDate();
+  const year = date.getUTCFullYear();
+  const dateString = `${day}${month}${year}`;
 
-  this.paymentCode = randomPart;
+  const paddedNumber = (jumlahData + 1).toString().padStart(3, '0');
+  const basic = 'TRX-' + paddedNumber + dateString;
+
+  this.paymentCode = basic;
   next();
 });

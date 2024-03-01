@@ -44,15 +44,19 @@ export class PaymentRelation extends Document {
 export const PaymentRelationSchema =
   SchemaFactory.createForClass(PaymentRelation);
 
-PaymentRelationSchema.pre('save', function (next) {
-  const currentDate = new Date();
+PaymentRelationSchema.pre('save', async function (next) {
+  const jumlahData = await this.$model('PaymentRelation').countDocuments({
+    deletedAt: null,
+  });
+  const date = new Date();
+  const month = date.getUTCMonth() + 1;
+  const day = date.getUTCDate();
+  const year = date.getUTCFullYear();
+  const dateString = `${day}${month}${year}`;
 
-  const randomPart = Math.random().toString().slice(2, 6);
-  const dateString = currentDate.toISOString().slice(0, 10).replace(/-/g, '');
-
-  const basic = `INV-${dateString}SL${randomPart}`;
+  const paddedNumber = (jumlahData + 1).toString().padStart(3, '0');
+  const basic = 'INV-' + paddedNumber + dateString;
 
   this.invoiceCode = basic;
-  (this.expiredDate = new Date(currentDate.getTime() + 24 * 60 * 60 * 1000)),
-    next();
+  (this.expiredDate = new Date(date.getTime() + 24 * 60 * 60 * 1000)), next();
 });

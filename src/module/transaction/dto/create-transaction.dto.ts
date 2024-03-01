@@ -1,5 +1,6 @@
 import {
   IsArray,
+  IsDateString,
   IsEnum,
   IsNumber,
   IsOptional,
@@ -31,4 +32,18 @@ export class CreateTransactionDto {
   @IsEnum(['created', 'completed'])
   @IsOptional()
   status?: string;
+}
+
+export class CreateBookingDto {
+  @IsString()
+  customerCode: string;
+
+  @IsArray()
+  item: { serviceCode: string; amount: number; employeeCode: string }[];
+
+  @IsOptional()
+  status: string;
+
+  @IsDateString()
+  bookingDate: Date;
 }

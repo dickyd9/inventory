@@ -76,7 +76,7 @@ export class ServicesService {
     return { message: 'Success add item', result };
   }
 
-  async getAllService(keyword: any) {
+  async getAllService(keyword: any, category: string) {
     const query: any = {
       deletedAt: null,
     };
@@ -84,6 +84,8 @@ export class ServicesService {
     if (keyword) {
       const regex = new RegExp(keyword, 'i');
       query.$or = [{ servicesName: regex }, { servicesCode: regex }];
+    } else if (category) {
+      query.servicesCategory = category;
     }
 
     const services = await this.modelServices.find(query);
@@ -118,10 +120,15 @@ export class ServicesService {
   async createServicesCategory(
     createServiceCategoryDto: CreateServiceCategoryDto,
   ) {
-    const category = new this.modelServicesCategory(createServiceCategoryDto);
+    try {
+      const categoryName = createServiceCategoryDto.categoryName.toLowerCase();
+      const category = new this.modelServicesCategory({ categoryName });
 
-    const result = await category.save();
-    return { message: 'Category Created!', result };
+      const result = await category.save();
+
+      return { message: 'Category Created!', result };
+    } catch (error) {}
+    return { message: 'Data Duplicate!' };
   }
 
   async getServicesCategory() {
@@ -134,7 +141,7 @@ export class ServicesService {
     const result = [];
     await Promise.all(
       category.map(async (cat: any) => {
-        const services = await this.modelServices.find({
+        const services = await this.modelItem.find({
           servicesCategory: cat.categoryName,
         });
         const serviceCategory = {

@@ -18,6 +18,10 @@ import { EmployeeTaskSchema } from '../employee/entities/employee.task';
 import { userLogSchema } from '../user/entities/user-log-entity';
 import { ExpensesSchema } from '../report/entities/expense.entity';
 import { ServicesCategorySchema } from '../services/entities/service.category.entity';
+import { CustomerReportSchema } from '../customer/entities/customer.report.entity';
+import { TransactionReportSchema } from '../transaction/entities/transaction.report';
+import { BookingTransactionSchema } from '../transaction/entities/booking-transaction';
+import { ItemReportSchema } from '../item/entities/item.report.entity';
 
 @Module({
   imports: [
@@ -32,13 +36,17 @@ import { ServicesCategorySchema } from '../services/entities/service.category.en
       { name: 'Services', schema: ServicesSchema },
       { name: 'ServicesCategory', schema: ServicesCategorySchema },
       { name: 'Item', schema: ItemSchema },
+      { name: 'ItemReport', schema: ItemReportSchema },
       { name: 'ItemCategory', schema: ItemCategorySchema },
+      { name: 'BookingTransaction', schema: BookingTransactionSchema },
       { name: 'Transaction', schema: TransactionSchema },
+      { name: 'TransactionReport', schema: TransactionReportSchema },
       { name: 'PaymentRelation', schema: PaymentRelationSchema },
       { name: 'Employee', schema: EmployeeSchema },
       { name: 'EmployeeTask', schema: EmployeeTaskSchema },
       { name: 'EmployeeTaskReport', schema: EmployeeTaskReportSchema },
       { name: 'Customer', schema: CustomerSchema },
+      { name: 'CustomerReport', schema: CustomerSchema },
       { name: 'CustomerPoint', schema: CustomerPointSchema },
       { name: 'Expenses', schema: ExpensesSchema },
     ]),
@@ -55,13 +63,17 @@ import { ServicesCategorySchema } from '../services/entities/service.category.en
       { name: 'Services', schema: ServicesSchema },
       { name: 'ServicesCategory', schema: ServicesCategorySchema },
       { name: 'Item', schema: ItemSchema },
+      { name: 'ItemReport', schema: ItemReportSchema },
       { name: 'ItemCategory', schema: ItemCategorySchema },
+      { name: 'BookingTransaction', schema: BookingTransactionSchema },
       { name: 'Transaction', schema: TransactionSchema },
+      { name: 'TransactionReport', schema: TransactionReportSchema },
       { name: 'PaymentRelation', schema: PaymentRelationSchema },
       { name: 'Employee', schema: EmployeeSchema },
       { name: 'EmployeeTask', schema: EmployeeTaskSchema },
       { name: 'EmployeeTaskReport', schema: EmployeeTaskReportSchema },
       { name: 'Customer', schema: CustomerSchema },
+      { name: 'CustomerReport', schema: CustomerReportSchema },
       { name: 'CustomerPoint', schema: CustomerPointSchema },
       { name: 'Expenses', schema: ExpensesSchema },
     ]),

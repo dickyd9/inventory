@@ -13,7 +13,7 @@ import {
 import { CustomerService } from './customer.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
-import { ResponseInterceptor } from 'src/common/response/response.interceptor'
+import { ResponseInterceptor } from 'src/common/response/response.interceptor';
 
 @Controller('customer')
 export class CustomerController {
@@ -26,13 +26,12 @@ export class CustomerController {
 
   @Get()
   @UseInterceptors(ResponseInterceptor)
-  findAll(@Query('keyword') keyword: any) {
-    return this.customerService.findAll(keyword);
-  }
-
-  @Get('all')
-  posCustomerList(@Query('keyword') keyword: any) {
-    return this.customerService.findAll(keyword);
+  findAll(
+    @Query('keyword') keyword: any,
+    @Query('month') month: number,
+    @Query('year') year: number,
+  ) {
+    return this.customerService.findAll(keyword, month, year);
   }
 
   @Get(':customerCode')

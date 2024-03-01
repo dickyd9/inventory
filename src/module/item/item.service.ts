@@ -1,24 +1,20 @@
-import { Injectable } from '@nestjs/common';
-import { CreateItemDto } from './dto/create-item.dto';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { CreateItemDto, ItemCategoryDto } from './dto/create-item.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { Item } from './entities/item.entity';
 import { ItemCategory } from './entities/item.category';
-import { Employee } from '../employee/entities/employee.entity';
-import { EmployeeTask } from '../employee/entities/employee.task';
 
 @Injectable()
 export class ItemService {
   constructor(
-    @InjectModel('Item') private itemModel: Model<Item>,
-    @InjectModel('Employee') private employeeModel: Model<Employee>,
-    @InjectModel('EmployeeTask') private employeTaskeModel: Model<EmployeeTask>,
-    @InjectModel('ItemCategory') private itemCategoryModel: Model<ItemCategory>,
+    @InjectModel('Item') private modelItem: Model<Item>,
+    @InjectModel('ItemCategory') private modelItemCategory: Model<ItemCategory>,
   ) {}
 
   async createItem(createItemDto: CreateItemDto) {
-    const item = new this.itemModel(createItemDto);
+    const item = new this.modelItem(createItemDto);
     const result = await item.save();
     return {
       message: 'Success add item',
@@ -28,7 +24,11 @@ export class ItemService {
     };
   }
 
-  async getAllItem(keyword: any, type: string): Promise<Item[]> {
+  async getAllItem(
+    keyword: any,
+    type: string,
+    category: string,
+  ): Promise<Item[]> {
     const query: any = {
       deletedAt: null,
     };
@@ -38,36 +38,78 @@ export class ItemService {
       query.$or = [{ itemName: regex }, { itemCode: regex }];
     }
 
+    if (category) {
+      query.itemCategory = new mongoose.Types.ObjectId(category);
+    }
+
     if (type) {
       query.itemType = type;
     }
 
-    const items = await this.itemModel.find(query);
+    const items = await this.modelItem.aggregate([
+      {
+        $match: query,
+      },
+      {
+        $lookup: {
+          from: 'itemcategories',
+          localField: 'itemCategory',
+          foreignField: '_id',
+          as: 'categoryData',
+        },
+      },
+      {
+        $addFields: {
+          categoryName: { $arrayElemAt: ['$categoryData.categoryName', 0] },
+        },
+      },
+      {
+        $project: {
+          categoryData: 0,
+        },
+      },
+    ]);
+
     return items;
   }
 
   async findOne(itemId: string) {
-    const item = await this.itemModel
+    const item = await this.modelItem
       .findById(itemId)
       .select('-_id -__v')
       .exec();
     return item;
   }
 
-  async updateItemAmount(itemId: string, amount: number) {
-    const item = await this.itemModel.findById({ _id: itemId });
-    const result = await item.updateOne({
-      itemAmount: item.itemAmount + amount,
-    });
-
-    return {
-      message: 'Amount Updated',
-      result,
-    };
+  async updateItemAmount(itemCode: string, amount: number, type: string) {
+    try {
+      const item = await this.modelItem.findOne({ itemCode: itemCode });
+      if (!item) {
+        throw new HttpException('Item tidak ditemukan', HttpStatus.NOT_FOUND);
+      }
+      if (type !== 'expenses' && item?.itemAmount < 1) {
+        throw new HttpException(
+          'Jumlah Item Tidak Mencukupi!',
+          HttpStatus.EXPECTATION_FAILED,
+        );
+      } else {
+        const result = await item.updateOne({
+          itemAmount: item.itemAmount + amount,
+        });
+        return {
+          message: 'Amount Updated',
+          result,
+        };
+      }
+    } catch (error) {
+      const errorMessage =
+        error && error.message ? error.message : 'Error tidak diketahui';
+      throw new HttpException(errorMessage, HttpStatus.NOT_FOUND);
+    }
   }
 
   async updateItemStatus(itemCode: string) {
-    const itemempty = await this.itemModel
+    const itemempty = await this.modelItem
       .findOneAndUpdate({ itemCode }, { itemStatus: 'close' }, { new: true })
       .exec();
 
@@ -75,7 +117,7 @@ export class ItemService {
   }
 
   async update(itemId: string, updateItemDto: UpdateItemDto) {
-    const item = await this.itemModel.findOne({ _id: itemId });
+    const item = await this.modelItem.findOne({ _id: itemId });
     const result = await item.updateOne(updateItemDto);
     return {
       message: 'Item Updated!',
@@ -84,13 +126,140 @@ export class ItemService {
   }
 
   async remove(itemId: string) {
-    await this.itemModel.findOneAndUpdate(
-      { _id: itemId },
-      { deletedAt: new Date() },
-    );
+    // await this.modelItem.findOneAndUpdate(
+    //   { _id: itemId },
+    //   { deletedAt: new Date() },
+    // );
+    await this.modelItem.findOneAndDelete({
+      _id: itemId,
+    });
     return {
       message: 'Success delete Item',
       count: 1,
     };
+  }
+
+  async assignItemServices(
+    itemCode: string,
+    itemAssign: {
+      itemCode: string;
+      amount: number;
+    }[],
+  ) {
+    try {
+      const item = await this.modelItem.findOne({ itemCode: itemCode });
+
+      const useService = [];
+      console.log(itemAssign);
+      itemAssign?.map((item: any) => {
+        useService.push({
+          itemCode: item?.itemCode,
+          amount: item?.amount,
+          addDate: new Date(),
+        });
+      });
+
+      const result = await item.updateOne({
+        itemUseService: useService,
+      });
+
+      return {
+        message: `${item.itemName} success assign item!`,
+        result,
+      };
+    } catch (error) {
+      throw new HttpException(error, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  async assignItemCat(itemId: any, categoryId: any) {
+    const categories = await this.modelItemCategory.findOne({
+      _id: categoryId,
+    });
+
+    if (!categories) {
+      throw new HttpException('Category Not Found!', HttpStatus.NOT_FOUND);
+    }
+
+    const item = await this.modelItem.findOne({ _id: itemId });
+
+    const result = await item.updateOne({
+      itemCategory: categories._id,
+    });
+
+    return {
+      message: `Services assigned for ${categories.categoryName}`,
+      result,
+    };
+  }
+
+  // Item Category
+  async createItemCategory(itemCategoryDto: ItemCategoryDto) {
+    const cat = new this.modelItemCategory(itemCategoryDto);
+
+    const data = await cat.save();
+    return {
+      message: 'Category Created!',
+      data,
+    };
+  }
+
+  async findAllCategory(keyword: any) {
+    const query: any = {
+      deletedAt: null,
+    };
+
+    if (keyword) {
+      const regex = new RegExp(keyword, 'i');
+      query.$or = [{ itemName: regex }, { itemCode: regex }];
+    }
+
+    const cat = await this.modelItemCategory.find(query).exec();
+
+    const result = [];
+    await Promise.all(
+      cat.map(async (cat: any) => {
+        const services = await this.modelItem.find({
+          itemCategory: cat._id,
+        });
+        const serviceCategory = {
+          _id: cat._id,
+          categoryCode: cat.categoryCode,
+          categoryName: cat.categoryName,
+          totalService: services.length,
+        };
+
+        result.push(serviceCategory);
+      }),
+    );
+
+    return result;
+  }
+
+  async udpateCategory(categoryId: string, category: any) {
+    const cat = await this.modelItemCategory.findOne({
+      _id: categoryId,
+    });
+
+    const result = await cat.updateOne({
+      categoryName: category.categoryName,
+    });
+
+    return {
+      message: 'Category updated!',
+      result,
+    };
+  }
+
+  async deleteCategory(categoryId: string) {
+    const cat = await this.modelItemCategory.findOne({
+      _id: categoryId,
+    });
+
+    const result = await cat.updateOne({
+      deletedAt: new Date(),
+    });
+
+    return result;
   }
 }

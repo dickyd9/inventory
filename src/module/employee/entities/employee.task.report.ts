@@ -6,11 +6,18 @@ export class EmployeeTaskReport extends Document {
   @Prop({ type: String, index: true, default: null })
   employeeCode: string;
 
-  @Prop({ type: String, index: true })
+  @Prop({ type: String, index: true, default: null })
   transactionRef: string;
 
+  @Prop({ type: Number })
+  incomeEarn: number;
+
   @Prop({ type: String })
-  serviceCode: string;
+  itemCode: string;
+
+  @Prop({ type: Date })
+  deletedAt: Date;
 }
 
-export const EmployeeTaskReportSchema = SchemaFactory.createForClass(EmployeeTaskReport);
+export const EmployeeTaskReportSchema =
+  SchemaFactory.createForClass(EmployeeTaskReport);

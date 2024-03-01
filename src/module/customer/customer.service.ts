@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 
@@ -22,67 +22,83 @@ export class CustomerService {
     private modelTransaction: Model<Transaction>,
   ) {}
   async createCustomer(createCustomerDto: CreateCustomerDto) {
-    const customer = new this.customerModel(createCustomerDto);
-    const result = await customer.save();
-    return {
-      status: HttpStatus.CREATED,
-      message: 'Customer added',
-      detail: result,
-    };
+    try {
+      const customer = new this.customerModel(createCustomerDto);
+      const result = await customer.save();
+      return {
+        status: HttpStatus.CREATED,
+        message: 'Customer added',
+        detail: result,
+      };
+    } catch (error) {
+      throw new HttpException(error, HttpStatus.BAD_REQUEST);
+    }
   }
 
-  async findAll(keyword: any) {
-    const regexPattern = new RegExp(keyword, 'i');
-    const customer = await this.customerModel.find({
-      $and: [
-        {
-          $or: [
-            {
-              customerName: regexPattern,
-            },
-            {
-              customerContact: regexPattern,
-            },
-            {
-              customerEmail: regexPattern,
-            },
-          ],
-        },
-        {
-          deletedAt: null,
-        },
-      ],
-    });
-
-    const customerCodes = customer.map((cust) => cust.customerCode);
-
-    const customerPoints = await this.modelCustomerPoint.aggregate([
-      {
-        $match: {
-          customerCode: { $in: customerCodes },
-        },
-      },
-      {
-        $group: {
-          _id: '$customerCode',
-          totalPoints: { $sum: '$points' },
-        },
-      },
-    ]);
-
-    const enrichedCustomers = customer.map((cust) => {
-      const points = customerPoints.find(
-        (point) => point._id === cust.customerCode,
-      );
-      const totalPoints = points ? points.totalPoints : 0;
-
-      return {
-        ...cust.toObject(),
-        totalPoints,
+  async findAll(keyword: any, month: number, year: number) {
+    try {
+      const query: any = {
+        deletedAt: null,
       };
-    });
 
-    return enrichedCustomers;
+      if (month && year) {
+        const awalBulan = new Date(year, month - 1, 1);
+        const akhirBulan = new Date(year, month, 0, 23, 59, 59, 999);
+        query.createdAt = { $gte: awalBulan, $lte: akhirBulan };
+      }
+
+      if (keyword) {
+        const regexPattern = new RegExp(keyword, 'i');
+
+        query.$or = [
+          { customerName: { $regex: regexPattern } },
+          { customerEmail: { $regex: regexPattern } },
+        ];
+      }
+      const listCustomer = await this.customerModel.aggregate([
+        {
+          $match: query,
+        },
+        {
+          $lookup: {
+            from: 'customerpoints',
+            localField: 'customerCode',
+            foreignField: 'customerCode',
+            as: 'transactionRef',
+          },
+        },
+        {
+          $addFields: {
+            totalPoint: {
+              $sum: {
+                $map: {
+                  input: '$transactionRef',
+                  as: 'trx',
+                  in: '$$trx.pointAmount',
+                },
+              },
+            },
+            totalSpent: {
+              $sum: {
+                $map: {
+                  input: '$transactionRef',
+                  as: 'trx',
+                  in: '$$trx.spendTransaction',
+                },
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            transactionRef: 0,
+            __v: 0,
+          },
+        },
+      ]);
+
+      return listCustomer;
+    } catch (error) {}
   }
 
   async findOne(customerCode: string) {
@@ -114,18 +130,20 @@ export class CustomerService {
         totalPoint: trx.totalPoint,
         totalAmount: trx.totalAmount,
         totalPrice: trx.totalPrice,
-        service: [],
+        item: [],
       };
-      for (const service of trx.service) {
-        const itm = await this.modelServices.findOne({
-          servicesCode: service.serviceCode,
-        });
-        trxRef.service.push({
-          serviceCode: itm.servicesCode,
-          serviceName: itm.servicesName,
-          servicePrice: itm.servicesPrice,
-          servicePoint: itm.servicesPoint,
-        });
+      if (trx.item) {
+        for (const service of trx.item) {
+          const itm = await this.modelItem.findOne({
+            itemCode: service.itemCode,
+          });
+          trxRef.item.push({
+            itemCode: itm.itemCode,
+            itemName: itm.itemName,
+            itemPrice: itm.itemPrice,
+            itemPoint: itm.itemPoint,
+          });
+        }
       }
       report.transaction.push(trxRef);
     }

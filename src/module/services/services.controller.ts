@@ -26,8 +26,11 @@ export class ServicesController {
 
   @Get()
   @UseInterceptors(ResponseInterceptor)
-  async getAllService(@Query('keyword') keyword: any) {
-    return this.servicesService.getAllService(keyword);
+  async getAllService(
+    @Query('keyword') keyword: any,
+    @Query('category') category: any,
+  ) {
+    return this.servicesService.getAllService(keyword, category);
   }
 
   @Put('/:serviceId')
